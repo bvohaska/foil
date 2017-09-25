@@ -97,7 +97,11 @@ func CliFlags() (CliParams, bool) {
 	} else if (len(*cliFileSource) == 0) && (len(*cliStdIn) == 0) {
 		fmt.Println("You must select one: -textin or -source")
 		return CliParams{}, false
-	} else if (len(*cliPassword) == 0) && (len(*cliKey) == 0) {
+	} else if (*cliEncrypt == false) && (len(*cliPassword) == 0) && (len(*cliKey) == 0) {
+		/* 
+		*  This logic will allow for a use to encrypt wihtout a key or password. A random 
+		*  key will be generated, used, and printed to StdOut. The key will not be written to file
+		*/
 		fmt.Println("WARNING - You have not selected: -password or -key; A RANDOM key will be used!")
 	}
 
@@ -274,7 +278,8 @@ func AESCore(iv []byte, key []byte, adata *string, inputText []byte, operation s
 }
 
 //TestAESCore should be exported to another paclage
-/*func TestAESCore () {
+/*
+func TestAESCore () {
 	// AES Test vectors: https://csrc.nist.gov/projects/cryptographic-algorithm-validation-program
 	key := 53382df51d7d4d17964e178d9ccb2dea7ae8e2238c3a91a392d53fba523f48c4
 	iv := ede60d67a345d2be699d3b24
