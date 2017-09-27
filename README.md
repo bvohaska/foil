@@ -46,7 +46,7 @@ Which will build a copy of encryptorCore and save the binary in $GOPATH/bin
 
 Locate the binary that was just built. Enter the following on the first try.
 ```
-$: ./encryptorCore --help
+$: ./encryptorcore --help
 ```
 For encryption, simply follow the usuage instructions to supply an input and specify an output and the tool will encrypt; notice that you do not need to provide a key if you would like for a 256-bit key to be randomly generated for you. 
 
