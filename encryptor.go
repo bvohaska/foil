@@ -39,7 +39,7 @@ import (
 	"io/ioutil"
 	"os"
 
-	"encryptorCore/helpers"
+	"encryptorcore/helpers"
 )
 
 /* 
