@@ -12,6 +12,7 @@
 package helpers
 
 import (
+	"errors"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
@@ -142,25 +143,21 @@ func CliFlags() (CliParams, bool) {
 *  'crypto/rand'; specifically, rand.Read() which reads from os.urandom. See rand.Read() documentation
 *  for more information.  
 */
-func GetAESRandomBytes(randomSlice []byte, verbose bool) bool {
+func GetAESRandomBytes(randomSlice []byte, verbose bool) error {
 
 	// Check the length of the randomSlice to ebsure it is of length: 16, or 32
 	if len(randomSlice) == 0 {
-		fmt.Println("Error: Requested random bytes is of zero length")
-		return false
+		return errors.New("Error: Requested random bytes is of zero length")
 	} else if len(randomSlice) > 32 {
-		fmt.Println("Error: Requested random bytes too long")
-		return false
+		return errors.New("Error: Requested random bytes too long")
 	} else if len(randomSlice)%16 != 0 && len(randomSlice) != 12 {
-		fmt.Println("Error: Requested random bytes not of length 12, 16, 32")
-		return false
+		return errors.New("Error: Requested random bytes not of length 12, 16, 32")
 	}
 
 	// Read 'len(randomSlice)' bytes from os.urandom and store them in *randomSlice
 	numRead, err := rand.Read(randomSlice)
 	if err != nil {
-		fmt.Println("error:", err)
-		return false
+		return err
 	}
 
 	// Print the random bytes to stdIn if verbose is set to TRUE
@@ -169,7 +166,7 @@ func GetAESRandomBytes(randomSlice []byte, verbose bool) bool {
 	}
 
 	// SUCCESS
-	return true
+	return nil
 }
 
 //KeyFromPassword is an exportable FUNCTION
@@ -215,7 +212,7 @@ func KeyFromPassword(password *string, salt []byte, securityParameter int, verbo
 /*
 *  AESCore is the core AES function in this encryption and decryption tool. 
 */
-func AESCore(iv []byte, key []byte, adata *string, inputText []byte, operation string, verbose bool) ([]byte, bool) {
+func AESCore(iv []byte, key []byte, adata *string, inputText []byte, operation string, verbose bool) ([]byte, error) {
 	/*
 	*  Declaring variables here so excentuate the scope of variables used in KeyFromPassword; this was done
 	*  instead of using on-the-fly declarations. This design decision was informed by not wanting key related
@@ -259,14 +256,12 @@ func AESCore(iv []byte, key []byte, adata *string, inputText []byte, operation s
 	// Initialize a new instance of Go's AES cipher
 	aesBlock, err := aes.NewCipher(key)
 	if err != nil {
-		fmt.Println("Critial error in AESCore - NewCipher:", err)
-		return nil, false
+		return nil, fmt.Errorf("Critial error in AESCore - NewCipher: %v\n", err)
 	}
 	// Initialize the GCM mode on the AES cipher instance
 	aesGCM, err := cipher.NewGCM(aesBlock)
 	if err != nil {
-		fmt.Println("Critial error in AESCore - NewGCM:", err)
-		return nil, false
+		return nil, fmt.Errorf("Critial error in AESCore - NewGCM: %v\n", err)
 	}
 
 	/*
@@ -279,16 +274,14 @@ func AESCore(iv []byte, key []byte, adata *string, inputText []byte, operation s
 	if operation == "decrypt" {
 		OutputText, decErr = aesGCM.Open(nil, iv, inputText[12:], byteAdata)
 		if decErr != nil {
-			fmt.Println("AESCore - There was a decryption error -", decErr)
-			//fmt.Printf("AESCore - Output Text: %x\n", outputText)
-			return nil, false
+			//return nil, fmt.Errorf("AESCore - There was a decryption error: %v\nOutput Text: %x", decErr, outputText)
+			return nil, fmt.Errorf("AESCore - There was a decryption error: %v\n", decErr)
 		}	
 	} else if operation == "encrypt" {
 		OutputText = aesGCM.Seal(nil, iv, inputText, byteAdata)
 		OutputText = append(iv, OutputText...)
 	} else {
-		fmt.Println("AESCore - Invalid cipher operation during Operation Check")
-		return nil, false
+		return nil, errors.New("AESCore - Invalid cipher operation during Operation Check")
 	}
 	
 	/*
@@ -303,30 +296,15 @@ func AESCore(iv []byte, key []byte, adata *string, inputText []byte, operation s
 
 	// SUCCESS: Return the output of the Decryption/Encryption if there were no errors
 	if OutputText != nil {
-		return OutputText, true
+		return OutputText, nil
 	}
 
 	/*
 	*  FAILURE: If outputText was nil but passed the above tests an unknow error occured. Since Decryption/Encryption
 	*  should not fail silently, the default return value is failure represented by the tuple (false, nil)
 	 */
-	fmt.Printf("AESCore - WARNING - An unknown error occured. The output text is NIL but no oither errors were detected")
-	return nil, false
+	 return nil, errors.New("AESCore - WARNING - An unknown error occured. The output text is NIL but no oither errors were detected")
 }
 
-// TestGetAESRandomBytes should be exported to another package
-/*func TestGetAESRandomBytes () {
-	// AES Test vectors: https://csrc.nist.gov/projects/cryptographic-algorithm-validation-program
-	key := 53382df51d7d4d17964e178d9ccb2dea7ae8e2238c3a91a392d53fba523f48c4
-	iv := ede60d67a345d2be699d3b24
-	pt := 7e14b6a5b616ce97e02f9377002786a5
-	ct: = 5c4ba32d35959c7e9e94a1f9c0a5c2e0
-	//adata := nil
-}*/
-
-// TestKeyFromPassword should be exported to another package
-//func TestKeyFromPassword () {}
-
-
-//  TODO: Determine if it is possible to use Seal()/Open() on a file stream to give memory performance (size) optimization 
+//TODO: Fix file IO stream for AESCore
 

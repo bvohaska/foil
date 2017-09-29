@@ -32,8 +32,6 @@
 package main
 
 import (
-	"crypto/aes"
-	"crypto/cipher"
 	"encoding/hex"
 	"fmt"
 	"io/ioutil"
@@ -96,7 +94,10 @@ func cliInputFileLogic(cliStdin *string, cliFileSource *string, operation *strin
 	*/
 	if *operation == "encrypt" {
 		iv = make([]byte, 12)
-		helpers.GetAESRandomBytes(iv, verbose)
+		err := helpers.GetAESRandomBytes(iv, verbose)
+		if err != nil {
+			fmt.Println(err)
+		}
 	} else if *operation == "decrypt" {
 		iv = inputText[:12]
 	}
@@ -201,7 +202,10 @@ func cliKeyLogic(cliPassword *string, cliKey *string, cliOperation *string, verb
 	} else {
 		if *cliOperation == "encrypt"{
 			key = make([]byte, 32)
-			helpers.GetAESRandomBytes(key, verbose)
+			err := helpers.GetAESRandomBytes(key, verbose)
+			if err != nil {
+				fmt.Println(err)
+			}
 			fmt.Println("WARNING: Random key generated and used!")
 			fmt.Printf("SECRET - Key: %x/n", key)
 			return key, true
@@ -231,6 +235,7 @@ func main() {
 
 	var (
 		mainSuccess bool
+		mainError   error
 		inputText   []byte
 		outputText  []byte
 		iv          []byte
@@ -259,9 +264,9 @@ func main() {
 	}
 
 	// Perform the encryption or decryption operation
-	outputText, mainSuccess = helpers.AESCore(iv, key, cliParameters.CliADATA, inputText, *cliParameters.Operation, *cliParameters.CliVerbose)
-	if !mainSuccess {
-		fmt.Println("There was an AES error. Terminating execution.")
+	outputText, mainError = helpers.AESCore(iv, key, cliParameters.CliADATA, inputText, *cliParameters.Operation, *cliParameters.CliVerbose)
+	if  mainError != nil {
+		fmt.Printf("There was an AES error. Terminating execution: %v", mainError)
 		return
 	}
 
@@ -274,109 +279,3 @@ func main() {
 
 	//_ = testFramework(cliParameters, false, false)
 }
-
-// testFramework tests the exported fucntions from the helpers package. Some of this can be automated
-func testFramework(testCliParameters helpers.CliParams, toughTests bool, easyCheck bool) bool {
-
-	type answers struct {
-		index int
-		success bool
-	}
-
-	//******** Hard test: GetAESRandomBytes ********//
-		if toughTests {
-			var successSlice []int
-			for i := 0; i < 129; i++{
-				trialRandom := make([]byte, i)
-				fmt.Printf("Index: %d :", i)
-				didISucceed := helpers.GetAESRandomBytes(trialRandom, false)
-				if didISucceed {
-					successSlice = append(successSlice, i)
-				}
-			}
-			for _, value := range successSlice {
-				if value == 12 || value == 16 || value == 32 {
-					fmt.Printf("Pass - difficult GetAESRandomBytes: %d bytes\n", value)
-				} else{
-					//fmt.Printf("Fail - difficult GetAESRandomBytes: %d bytes\n", value)
-				}
-			}
-		}
-	//******** End Hard test: KeyFromPassword ********//
-	
-	//******** Hard test: KeyFromPassword ********//
-	/*	if toughTests {
-			
-			var (
-				numRandomStrings 	int
-				charSet 			string
-				testPassword 		*string
-				successSlice 		*string
-				trialKey 			[]byte
-			)
-			//CliFlags will remove {",',/} from the password. Do not use Base64 output as a password
-			charSet = " !#$%&()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~';"
-			numRandomStrings = 64
-			for i := 0; i < numRandomStrings; i++ {
-				//TODO: generate random string from charSet and assign to testPassword 
-				trialKey = helpers.KeyFromPassword(testPassword, nil, 64, false)
-			}
-			
-		}*/
-	//******** End Hard test: GetAESRandomBytes ********//
-
-	// Check the sanity of standard functions
-	if easyCheck {
-
-		// Generate a test plaintext
-		plaintext := []byte("Attack at dawn! I have special characters: !@#(%*U@#)$(_+!@#_|||&&DROPFILLSELECT. This is the end of text")
-	
-		// Simple test: GetAESRandomBytes
-		// Generate a test nonce, iv, key
-		nonce := make([]byte, 12)
-		aesTrialIv := make([]byte, helpers.BlockSize)
-		key := make([]byte, 2*helpers.BlockSize)
-		_ = helpers.GetAESRandomBytes(nonce, true)
-		_ = helpers.GetAESRandomBytes(aesTrialIv, true)
-		_ = helpers.GetAESRandomBytes(key, true)
-
-		// Trial password expansion function
-		aesKey := helpers.KeyFromPassword(testCliParameters.CliPassword, nil, 64, true)
-		aesIv := aesKey[:12]
-
-		// Test AES encryption and decryption
-		encAESResult, encSuccess := helpers.AESCore(aesIv, aesKey, nil, plaintext, "encrypt", true)
-		if !encSuccess {
-			fmt.Println("Error in TEST ENCRYPTION:", encSuccess)
-		}
-		decAESResult, decSuccess := helpers.AESCore(aesIv, aesKey, nil, encAESResult, "decrypt", true)
-		if !decSuccess {
-			fmt.Println("Error in TEST DECRYPTION:", decSuccess)
-		}
-
-		// Print results to STDIN
-		fmt.Printf("TestFramework - Ciphertext Output: %x\n", encAESResult)
-		fmt.Printf("TestFramework - Plaintext Output: \"%s\"\n", decAESResult)
-
-		// Test AES construction primitives
-		aesBlock, _ := aes.NewCipher(aesKey)
-		aesGCM, _ := cipher.NewGCM(aesBlock)
-
-		ciphertext := aesGCM.Seal(nil, aesIv, plaintext, nil)
-		fmt.Printf("TestFramework - From primitives - Ciphertext is: %x\n", ciphertext)
-
-		cipherString := string(ciphertext)
-		encAESRString := string(encAESResult)
-		if cipherString == encAESRString {
-			fmt.Println("TEST RESULTS - No Errors. The ciphertexts from primitives and AESCore ARE the same")
-		} else {
-			fmt.Println("TEST RESULTS - No Errors. The ciphertexts from primitives and AESCore ARE NOT the same")
-		}
-	}
-
-	return true
-}
-	
-
-//TODO: Fix file IO stream for AESCore
-//TODO: Automated testing framework, statespace traversal, and fuzzer
