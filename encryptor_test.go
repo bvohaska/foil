@@ -119,6 +119,5 @@ func TestAESCore (t *testing.T) {
 //func TestKeyFromPassword () {}
 
 
-//  TODO: Determine if it is possible to use Seal()/Open() on a file stream to give memory performance (size) optimization 
-
+//TODO: Determine if it is possible to use Seal()/Open() on a file stream to give memory performance (size) optimization 
 //TODO: Automated testing framework, statespace traversal, and fuzzer
