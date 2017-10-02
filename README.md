@@ -1,6 +1,6 @@
 # Simple CLI Encryption Tool
 
-This is a simple tool desinged to perform AES-256-GCM encryption and decryption and uses a 96-bit IV/nonce. The tool has many command-line options that can veiwed by running the binary with the flag '--help'. These flags are also prominately displayed in encryptor.go.
+This is a simple tool desinged to perform AES-256-GCM encryption and decryption and uses a 96-bit IV/nonce. The tool has many command-line options that can veiwed by running the binary with the flag '--help'. These flags are also prominently displayed in encryptor.go.
 
 
 ## Getting Started
