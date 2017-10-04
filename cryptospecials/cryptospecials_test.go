@@ -1,0 +1,111 @@
+package cryptospecials
+
+import (
+	"bytes"
+	"crypto/rsa"
+	"crypto/sha256"
+	"testing"
+)
+
+/*
+*  Test to ensure that:
+*  (1) Short RSA keys are rejected
+*  (2) Non-standard RSA moduli are rejected; they must be 2048, 3072, or 4096
+*  (3) RSA primes are indeed prime with probability (1-(1/4)^-64); Miller-Rabin Test
+ */
+func TestRSAKeyGen(t *testing.T) {
+
+	var (
+		testKey *rsa.PrivateKey
+		err     error
+	)
+
+	testKey, err = RSAKeyGen(1024)
+	if err == nil {
+		t.Errorf("FAIL - Short key size test failed")
+	}
+
+	testKey, err = RSAKeyGen(2049)
+	if err == nil {
+		t.Errorf("FAIL - No warning to user concerning non-standard key sizes")
+	}
+
+	testKey, err = RSAKeyGen(2048)
+	if err != nil {
+		t.Errorf("FAIL - Fail on normal operation - %v", err)
+	}
+
+	if testKey.Primes[0].ProbablyPrime(64) == false || testKey.Primes[1].ProbablyPrime(64) == false {
+		t.Errorf("FAIL - RSA modulus is divisible by non-primes")
+	}
+}
+
+/*
+*  Incomplete test. Requires test vectors. Test will FAIL in current form.
+*  Note: MGF1 uses SHA-1. This implementation uses SHA-256
+ */
+func TestMGF1(t *testing.T) {
+
+	var (
+		testVector1      []byte
+		testVector2      []byte
+		referenceOutput1 []byte
+		referenceOutput2 []byte
+	)
+
+	testVector1 = []byte("Value of test vector 1")
+	testVector2 = []byte("Value of test vector 2")
+	referenceOutput1 = []byte("Value of output reference 1")
+	referenceOutput2 = []byte("Value of output reference 2")
+	h := sha256.New()
+	outputTest := make([]byte, 256) // 256 bytes == (2048 bits) / 8
+
+	mgf1XOR(outputTest, h, testVector1)
+	if bytes.Compare(outputTest, referenceOutput1) != 0 {
+		t.Errorf("FAIL - Test vector ourput did not equal reference value 1 ")
+	}
+
+	h.Reset() // Reset state of SHA-256 hash function
+	mgf1XOR(outputTest, h, testVector2)
+	if bytes.Compare(outputTest, referenceOutput2) != 0 {
+		t.Errorf("FAIL - Test vector ourput did not equal reference value 2 ")
+	}
+
+	//fmt.Printf("The length of output is: %d\n The output is: %x\n", len(outputTest), outputTest)
+}
+
+/*
+*  This test does not garantee the cryptogrpahic viability of rsaVRF.generate() or rsaVRF.verfiy()
+*  instead it checks the consistancy of generate and verfiy to validate hte logic of EACH OTHER.
+*  Further testing and validation of the cryptography is required.append
+ */
+func TestRSAVRFGenVerify(t *testing.T) {
+
+	var (
+		verifyCheck bool
+		verbose     bool
+		alpha       []byte
+		mgf1Alpha   []byte
+		err         error
+		rsaVrfTest  RSAVRF
+	)
+
+	// If set to true, most of the RSA and hashing parameters will be displayed
+	verbose = false
+
+	alpha = []byte("This is a test!")
+	mgf1Alpha = make([]byte, 255)
+	mgf1XOR(mgf1Alpha, sha256.New(), alpha)
+
+	// Expensive operation but allows for random testing which is critically important
+	rsaVrfTest.PrivateKey, err = RSAKeyGen(2048)
+	if err != nil {
+		t.Errorf("FAIL - Error in RSAKeyGen(2048)")
+	}
+
+	rsaVrfTest.proof, rsaVrfTest.beta = rsaVrfTest.generate(alpha, verbose)
+	verifyCheck = rsaVrfTest.verify(mgf1Alpha, &rsaVrfTest.PublicKey, verbose)
+	if verifyCheck == false {
+		t.Errorf("FAIL - VRF verification failed")
+	}
+}
