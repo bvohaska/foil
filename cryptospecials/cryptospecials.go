@@ -12,6 +12,7 @@ package cryptospecials
 
 import (
 	"bytes"
+	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
@@ -30,7 +31,99 @@ type RSAVRF struct {
 type OPRF struct {
 }
 
-func hash2curve() {
+/*
+*  Warning: Try & Increment is not a constant-time algorithm
+*  Warning: This function requres cryptographic vetting!
+*  hash2curve implements the Try & Increment method for hashing into
+*  an Elliptic Curve. Note: hash2curve only works on weierstrass
+*  curves at this point
+ */
+func hash2curve(data []byte, h hash.Hash, eCurve *elliptic.CurveParams, curveType int, verbose bool) error {
+
+	/*
+	*  Curve Type:
+	*		(1) Weierstrass - NIST Curves
+	*		(2) Others - Not currently supported
+	 */
+
+	var (
+		xByte   []byte
+		counter int
+	)
+
+	x := big.NewInt(0)
+	y := big.NewInt(0)
+	one := new(big.Int).SetInt64(int64(1))
+	h.Write(data)
+	xByte = h.Sum(nil)
+	x.SetBytes(xByte)
+	x.Mod(x, eCurve.P)
+
+	if verbose {
+		fmt.Println("Length of xByte:", len(xByte))
+		fmt.Println("P:", eCurve.P)
+		fmt.Println("B:", eCurve.B)
+	}
+
+	if curveType == 1 {
+		/*
+		* Determine (x^3 -3x + b)^(1/2) as defined by the weierstrass Elliptic Curve. Parts taken from:
+		*    https://golang.org/src/crypto/elliptic/elliptic.go?s=2054:2109#L55
+		 */
+
+		x3 := big.NewInt(0)
+		threeX := big.NewInt(0)
+		for {
+
+			x3.Mul(x, x)
+			x3.Mul(x3, x)
+
+			threeX.Lsh(x, 1)
+			threeX.Add(threeX, x)
+
+			x3.Sub(x3, threeX)
+			x3.Add(x3, eCurve.B)
+			x3.Mod(x3, eCurve.P) // x^3 -3x + b
+			//fmt.Println("x3:", x3)
+
+			// Use Jacobi symbols to determine if x is a quadratic residue in F_p
+			if big.Jacobi(x3, eCurve.Params().P) == 1 {
+				break
+			}
+
+			x.Add(x, one)
+			counter++
+		}
+		/*
+		*  ModSqrt does not account for degenerate roots
+		 */
+		y.ModSqrt(x3, eCurve.P)
+
+	} else {
+		return fmt.Errorf("Error: Unsupported curve type. Currently support only Weierstrass curves")
+	}
+
+	// Double check that the point (x,y) is on the provided elliptic curve
+	if eCurve.IsOnCurve(x, y) != true {
+		return fmt.Errorf("Error: Unable to hash data onto curve! Point (x,y) not on given elliptic curve")
+	}
+
+	if verbose {
+		fmt.Printf("Number of Try & Increment iterations: %d\n", counter)
+		fmt.Println("x-xoordinate:", x)
+		fmt.Println("x-coordinate bit length:", x.BitLen())
+		fmt.Println("y-coordinate:", y)
+		fmt.Println("y-coordinate bit length:", y.BitLen())
+	}
+
+	return nil
+}
+
+func (rep OPRF) recv() {
+
+}
+
+func (rep OPRF) send() {
 
 }
 
@@ -82,7 +175,8 @@ func (vrf RSAVRF) generate(alpha []byte, verbose bool) ([]byte, []byte) {
 	proof.Exp(&outInt, vrf.D, vrf.N)
 
 	hash.Reset()
-	beta = hash.Sum(proof.Bytes()) //Outputs in big-endian
+	hash.Write(proof.Bytes())
+	beta = hash.Sum(nil) //Outputs in big-endian
 
 	if verbose {
 		fmt.Printf("****VRF.generate - Verbose Output****\n")
@@ -108,6 +202,10 @@ func (vrf RSAVRF) generate(alpha []byte, verbose bool) ([]byte, []byte) {
 
 }
 
+/*
+*  This function has NOT been tested for cryptographic soundness at this point.
+*  Do not use for cryptographic applications.
+ */
 func (vrf RSAVRF) verify(mgf1Alpha []byte, pubKey *rsa.PublicKey, verbose bool) bool {
 
 	var (
@@ -117,7 +215,8 @@ func (vrf RSAVRF) verify(mgf1Alpha []byte, pubKey *rsa.PublicKey, verbose bool) 
 	)
 
 	hash := sha256.New()
-	betaCheck = hash.Sum(vrf.proof)
+	hash.Write(vrf.proof)
+	betaCheck = hash.Sum(nil)
 
 	/*
 	*  Generate: mgf1Check = (MGF1(alpha)^d)^e
@@ -162,8 +261,8 @@ func (vrf RSAVRF) verify(mgf1Alpha []byte, pubKey *rsa.PublicKey, verbose bool) 
 }
 
 /*
-*  Taken from Golang source:
-* https://golang.org/src/crypto/rsa/rsa.go?s=11736:11844#L308
+* Taken from Golang source:
+*   https://golang.org/src/crypto/rsa/rsa.go?s=11736:11844#L308
 * incCounter increments a four byte, big-endian counter.
  */
 func incCounter(c *[4]byte) {
@@ -181,8 +280,8 @@ func incCounter(c *[4]byte) {
 }
 
 /*
-*   Taken from Golang source:
-*  https://golang.org/src/crypto/rsa/rsa.go?s=11736:11844#L323
+*  Taken from Golang source:
+*    https://golang.org/src/crypto/rsa/rsa.go?s=11736:11844#L323
 *  mgf1XOR XORs the bytes in out with a mask generated using the MGF1 function
 *  specified in PKCS#1 v2.1.
  */
@@ -204,12 +303,4 @@ func mgf1XOR(out []byte, hash hash.Hash, seed []byte) {
 		}
 		incCounter(&counter)
 	}
-}
-
-func (rep OPRF) recv() {
-
-}
-
-func (rep OPRF) send() {
-
 }

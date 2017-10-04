@@ -2,6 +2,7 @@ package cryptospecials
 
 import (
 	"bytes"
+	"crypto/elliptic"
 	"crypto/rsa"
 	"crypto/sha256"
 	"testing"
@@ -107,5 +108,18 @@ func TestRSAVRFGenVerify(t *testing.T) {
 	verifyCheck = rsaVrfTest.verify(mgf1Alpha, &rsaVrfTest.PublicKey, verbose)
 	if verifyCheck == false {
 		t.Errorf("FAIL - VRF verification failed")
+	}
+}
+
+func TestHash2Curve(t *testing.T) {
+
+	//data := []byte("I'm a string!")
+	data := []byte("I'm a string!")
+	h := sha256.New()
+	ec := elliptic.P256()
+
+	err := hash2curve(data, h, ec.Params(), 1, false)
+	if err != nil {
+		t.Errorf("FAIL: %v\n", err)
 	}
 }
