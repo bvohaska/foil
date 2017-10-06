@@ -22,21 +22,25 @@ import (
 	"math/big"
 )
 
+//RSAVRF is an exportable struct
 type RSAVRF struct {
 	proof []byte
 	beta  []byte
 	*rsa.PrivateKey
 }
 
+//OPRF is an exportable struct
 type OPRF struct {
+	rSecret    []byte
+	rSecretInv []byte
+	elliptic.Curve
 }
 
 /*
 *  Warning: Try & Increment is not a constant-time algorithm
 *  Warning: This function requres cryptographic vetting!
-*  hash2curve implements the Try & Increment method for hashing into
-*  an Elliptic Curve. Note: hash2curve only works on weierstrass
-*  curves at this point
+*  hash2curve implements the Try & Increment method for hashing into an Elliptic
+*  Curve. Note: hash2curve only works on weierstrass curves at this point
  */
 func hash2curve(data []byte, h hash.Hash, eCurve *elliptic.CurveParams, curveType int, verbose bool) error {
 
