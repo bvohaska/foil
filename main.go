@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"encryptorcore/commands"
+	"foil/commands"
 )
 
 //

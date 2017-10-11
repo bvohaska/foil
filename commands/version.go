@@ -19,13 +19,4 @@ var (
 			fmt.Println("Version 0.1a")
 		},
 	}
-
-	authorCmd = &cobra.Command{
-		Use:   "authors",
-		Short: "Display the authors of Foil",
-		Long:  ``,
-		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("Authors: Brian Vohaska <bvohaska@gmail.com>")
-		},
-	}
 )
