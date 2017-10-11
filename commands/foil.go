@@ -89,9 +89,9 @@ func stdChecks(min int, max int, cmd *cobra.Command, args []string) error {
 
 	// Check to make sure the appropriate flags are set
 	if stdOutBool == false && len(outputPath) == 0 {
-		return errors.New("Error: Must specify an output path")
+		return errors.New("Error: Must specify an output method")
 	} else if len(stdInString) == 0 && len(inputPath) == 0 {
-		return errors.New("Error: Must specify an input path")
+		return errors.New("Error: Must specify an input method")
 	}
 
 	// If success, return nil
