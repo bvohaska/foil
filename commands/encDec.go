@@ -37,14 +37,14 @@ var (
 	adataString string
 
 	encryptCmd = &cobra.Command{
-		Use:   "enc",
+		Use:   "enc [IN] [OUT]",
 		Short: "Encrypt input with AES-256-GCM",
 		Long:  ``,
 		RunE:  enc,
 	}
 
 	decryptCmd = &cobra.Command{
-		Use:   "dec",
+		Use:   "dec [KEY] [IN] [OUT]",
 		Short: "Decrypt input with AES-256-GCM",
 		Long:  ``,
 		RunE:  dec,
