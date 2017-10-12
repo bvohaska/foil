@@ -16,11 +16,17 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
+	"crypto/x509"
+	"encoding/pem"
 	"errors"
 	"fmt"
 	"hash"
+	"io/ioutil"
 	"math/big"
 )
+
+// Big In Zero
+var zero = big.NewInt(int64(0))
 
 //RSAVRF is an exportable struct
 type RSAVRF struct {
@@ -36,13 +42,14 @@ type OPRF struct {
 	elliptic.Curve
 }
 
+// Hash2curve is an exportable function
 /*
 *  Warning: Try & Increment is not a constant-time algorithm
 *  Warning: This function requres cryptographic vetting!
 *  hash2curve implements the Try & Increment method for hashing into an Elliptic
 *  Curve. Note: hash2curve only works on weierstrass curves at this point
  */
-func hash2curve(data []byte, h hash.Hash, eCurve *elliptic.CurveParams, curveType int, verbose bool) error {
+func Hash2curve(data []byte, h hash.Hash, eCurve *elliptic.CurveParams, curveType int, verbose bool) error {
 
 	/*
 	*  Curve Type:
@@ -132,7 +139,12 @@ func (rep OPRF) send() {
 }
 
 // RSAKeyGen is an exportable function
-func RSAKeyGen(keySize int) (rsaPrivKey *rsa.PrivateKey, err error) {
+/*
+*  RSAKeyGen allows only 2048, 3072, and 4096 bit key sizes (NITS standards). For larger
+*  key sizes use the ecc else it is likely that performance will be an issue. It is
+*  also much easier to utilize constant-time algorithms with ecc than useing rsa algos.
+ */
+func RSAKeyGen(keySize int) (*rsa.PrivateKey, error) {
 
 	if keySize < 2048 {
 		return nil, errors.New("Error: RSA key size less than 2048 bits")
@@ -146,11 +158,139 @@ func RSAKeyGen(keySize int) (rsaPrivKey *rsa.PrivateKey, err error) {
 	return privateKey, err
 }
 
+// RSAKeySave is an exportable function
+func RSAKeySave(privKey *rsa.PrivateKey, savePubKey bool, dest *string, verbose bool) error {
+
+	var (
+		derBytes []byte
+		pemBytes []byte
+		err      error
+	)
+
+	/*
+	*  Choose if saving a public or private key.
+	*  Encode the private key into a DER then a PEM
+	 */
+	if savePubKey {
+		derBytes, err = x509.MarshalPKIXPublicKey(&privKey.PublicKey)
+		if err != nil {
+			return fmt.Errorf("Error: %v", err)
+		}
+		pemBytes = pem.EncodeToMemory(
+			&pem.Block{
+				Type:  "RSA PUBLIC KEY",
+				Bytes: derBytes,
+			},
+		)
+		if verbose {
+			fmt.Println("Der Bytes:", derBytes)
+			fmt.Println("Pem Bytes:", pemBytes)
+		}
+	} else {
+		derBytes = x509.MarshalPKCS1PrivateKey(privKey)
+		pemBytes = pem.EncodeToMemory(
+			&pem.Block{
+				Type:  "RSA PRIVATE KEY",
+				Bytes: derBytes,
+			},
+		)
+		if verbose {
+			fmt.Println("SECRET - Der Bytes:", derBytes)
+			fmt.Println("SECRET - Pem Bytes:", pemBytes)
+		}
+	}
+
+	if *dest == "" {
+		*dest = "IAMAprivKey.pem"
+	}
+	// Write the PEM to file
+	err = ioutil.WriteFile(*dest, pemBytes, 0644)
+	if err != nil {
+		return fmt.Errorf("Error: %v", err)
+	}
+
+	return nil
+}
+
+// RSAPrivKeyLoad is an exportable function
+func RSAPrivKeyLoad(source *string, verbose bool) (*rsa.PrivateKey, error) {
+
+	var (
+		rawPem  []byte
+		err     error
+		privKey *rsa.PrivateKey
+	)
+
+	// Read raw PEM file
+	rawPem, err = ioutil.ReadFile(*source)
+	if err != nil {
+		return privKey, fmt.Errorf("Error: %v", err)
+	}
+	// Decode raw PEM into private key
+	pemData, _ := pem.Decode(rawPem)
+	if pemData == nil {
+		return privKey, errors.New("Error: Unable to parse PEM file - it may be empty or not in PEM format")
+	}
+	privKey, err = x509.ParsePKCS1PrivateKey(pemData.Bytes)
+	if err != nil {
+		return privKey, fmt.Errorf("Error: %v", err)
+	}
+	if verbose {
+		fmt.Println("SECRET - rawPem:", rawPem)
+		fmt.Println("SECRET - pemData:", pemData)
+		fmt.Println("SECRET - privKey:", privKey)
+	}
+	return privKey, nil
+}
+
+// RSAPubKeyLoad is an exportable function
+func RSAPubKeyLoad(source *string, verbose bool) (*rsa.PublicKey, error) {
+	var (
+		rawPem []byte
+		err    error
+	)
+
+	// Read raw PEM file
+	rawPem, err = ioutil.ReadFile(*source)
+	if err != nil {
+		return nil, fmt.Errorf("Error: %v", err)
+	}
+	// Decode raw PEM into private key
+	pemData, _ := pem.Decode(rawPem)
+	if pemData == nil {
+		return nil, errors.New("Error: Unable to parse PEM file - it may be empty or not in PEM format")
+	}
+	pubKey, err := x509.ParsePKIXPublicKey(pemData.Bytes)
+	if err != nil {
+		return nil, fmt.Errorf("Error: %v", err)
+	}
+	if verbose {
+		fmt.Println("rawPem:", rawPem)
+		fmt.Println("pemData:", pemData)
+		fmt.Println("pubKey:", pubKey)
+	}
+	// Extract the pub key and ensure it is of type RSA
+	switch pubKey := pubKey.(type) {
+	case *rsa.PublicKey:
+		return pubKey, nil
+	default:
+		return nil, errors.New("Key type is not RSA")
+	}
+}
+
 /*
 *  This function has NOT been tested for cryptographic soundness at this point.
-*  Do not use for cryptographic applications.
+*  Do not use for cryptographic applications until it has been properly vetted.
+*  The RSA-VRF below is based on: https://eprint.iacr.org/2017/099.pdf . The
+*  generate function beleow builds a proof and value from a plaintext alpha.
+*  alpha is the subject of this ZKP.
  */
-func (vrf RSAVRF) generate(alpha []byte, verbose bool) ([]byte, []byte) {
+func (vrf RSAVRF) generate(alpha []byte, verbose bool) ([]byte, []byte, error) {
+
+	// Check that vrf has values for N (big Int) and D (big Int) or return error
+	if vrf.N == zero || vrf.D == zero {
+		return nil, nil, errors.New("Error: No private key supplied")
+	}
 
 	var (
 		modLength int
@@ -174,6 +314,7 @@ func (vrf RSAVRF) generate(alpha []byte, verbose bool) ([]byte, []byte) {
 	/*
 	*  Warning: SetBytes interprets Bytes as Big-endian!
 	*  Exponentiate = Proof (pi) = MGF1(alpha)^D (mod N)
+	*  D is an RSA Secret!
 	 */
 	outInt.SetBytes(output)
 	proof.Exp(&outInt, vrf.D, vrf.N)
@@ -202,15 +343,27 @@ func (vrf RSAVRF) generate(alpha []byte, verbose bool) ([]byte, []byte) {
 		fmt.Println("MGF1 Output as big.Int:", outInt)
 	}
 
-	return proof.Bytes(), beta
+	return proof.Bytes(), beta, nil
 
 }
 
 /*
 *  This function has NOT been tested for cryptographic soundness at this point.
-*  Do not use for cryptographic applications.
+*  Do not use for cryptographic applications until it has been properly vetted.
+*  The RSA-VRF below is based on: https://eprint.iacr.org/2017/099.pdf . The
+*  verify function beleow verifies the provided proof and value. The verifier does
+*  not need knowledge of alpha; alpha is the subject of this ZKP.
  */
-func (vrf RSAVRF) verify(mgf1Alpha []byte, pubKey *rsa.PublicKey, verbose bool) bool {
+func (vrf RSAVRF) verify(mgf1Alpha []byte, pubKey *rsa.PublicKey, verbose bool) (bool, error) {
+
+	// Check that vrf has values for proof and beta or return error
+	if vrf.proof == nil || vrf.beta == nil {
+		return false, errors.New("Error: H(beta) or Beta not supplied")
+	}
+	// Check that the pub key has values for N (bit Int) and E (int) or return error
+	if pubKey.N == zero || pubKey.E == 0 {
+		return false, errors.New("Error: No public key not supplied")
+	}
 
 	var (
 		betaCheck []byte
@@ -250,7 +403,7 @@ func (vrf RSAVRF) verify(mgf1Alpha []byte, pubKey *rsa.PublicKey, verbose bool) 
 		if verbose {
 			fmt.Println("FAIL - Could not verify: Beta == H(proof)")
 		}
-		return false
+		return false, nil
 	}
 
 	//Check: compare the bytes of (mgf1Check == trial_MGF1(alpha)) ?= (mgf1Alpha = MGF1(alpha))
@@ -258,10 +411,10 @@ func (vrf RSAVRF) verify(mgf1Alpha []byte, pubKey *rsa.PublicKey, verbose bool) 
 		if verbose {
 			fmt.Println("FAIL - Could not verify: trial_MGF1(alpha) == MGF1(alpha)")
 		}
-		return false
+		return false, nil
 	}
 
-	return true
+	return true, nil
 }
 
 /*

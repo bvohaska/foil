@@ -8,6 +8,7 @@ import (
 	"testing"
 )
 
+// test for zeros
 /*
 *  Test to ensure that:
 *  (1) Short RSA keys are rejected
@@ -104,8 +105,14 @@ func TestRSAVRFGenVerify(t *testing.T) {
 		t.Errorf("FAIL - Error in RSAKeyGen(2048)")
 	}
 
-	rsaVrfTest.proof, rsaVrfTest.beta = rsaVrfTest.generate(alpha, verbose)
-	verifyCheck = rsaVrfTest.verify(mgf1Alpha, &rsaVrfTest.PublicKey, verbose)
+	rsaVrfTest.proof, rsaVrfTest.beta, err = rsaVrfTest.generate(alpha, verbose)
+	if err != nil {
+		t.Errorf("Internal Error: %v\n", err)
+	}
+	verifyCheck, err = rsaVrfTest.verify(mgf1Alpha, &rsaVrfTest.PublicKey, verbose)
+	if err != nil {
+		t.Errorf("Internal Error: %v\n", err)
+	}
 	if verifyCheck == false {
 		t.Errorf("FAIL - VRF verification failed")
 	}
@@ -118,8 +125,72 @@ func TestHash2Curve(t *testing.T) {
 	h := sha256.New()
 	ec := elliptic.P256()
 
-	err := hash2curve(data, h, ec.Params(), 1, false)
+	err := Hash2curve(data, h, ec.Params(), 1, false)
 	if err != nil {
 		t.Errorf("FAIL: %v\n", err)
 	}
+}
+
+func TestRSAKeySave(t *testing.T) {
+
+	// Read output destination from StdIn
+	/*
+		reader := bufio.NewReader(os.Stdin)
+		fmt.Println("Where should I save the RSA PEM file? :")
+
+		dest, err := reader.ReadString('\n')
+		if err != nil {
+			t.Errorf("Error: %v", err)
+		}
+	*/
+
+	// Test saving a RSA private key
+	dest := "IAMAPrivKey.pem"
+	privKey, err := RSAKeyGen(2048)
+	err = RSAKeySave(privKey, false, &dest, false)
+	if err != nil {
+		t.Errorf("FAIL - %v\n", err)
+	}
+
+	// Test saving a RSA public key
+	dest = "IAMAPubKey.pem"
+	err = RSAKeySave(privKey, true, &dest, true)
+	if err != nil {
+		t.Errorf("FAIL - %v\n", err)
+	}
+
+}
+
+func TestRSAKeyLoad(t *testing.T) {
+
+	// Read output destination from StdIn
+	/*
+		reader := bufio.NewReader(os.Stdin)
+		fmt.Println("Where should I save the RSA PEM file? :")
+
+		dest, err := reader.ReadString('\n')
+		if err != nil {
+			t.Errorf("Error: %v", err)
+		}
+	*/
+
+	// Test saving a RSA private key
+	dest := "IAMAPrivKey.pem"
+	privKey, errPriv := RSAPrivKeyLoad(&dest, false)
+	if errPriv != nil {
+		t.Errorf("FAIL - %v\n", errPriv)
+	}
+	validateErr := privKey.Validate()
+	if validateErr != nil {
+		t.Errorf("FAIL - %v\n", errPriv)
+	}
+
+	// Test saving a RSA public key
+	dest = "IAMAPubKey.pem"
+	pubKey, errPub := RSAPubKeyLoad(&dest, false)
+	if errPub != nil {
+		_ = pubKey
+		t.Errorf("FAIL - %v\n", errPub)
+	}
+
 }

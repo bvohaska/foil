@@ -1,4 +1,4 @@
-# Foil: A simple CLI tncryption tool & much more
+# Foil: A simple CLI *cryption tool & much more
 
 Foil provides a simple UI to provide a crypto-playground to the user. In tis way, foil was desinged to allow users to experiment with cryptography while also providing useful  AES-256-GCM encryption and decryption with a 96-bit IV/nonce.
 
