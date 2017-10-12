@@ -29,25 +29,27 @@ import (
 func init() {
 
 	// Define flags used by Encrypt/Decrypt and sub commands.
-	encryptCmd.PersistentFlags().StringVarP(&adataString, "adata", "", "", "Use [string] as ADATA for AES-GCM")
-	decryptCmd.PersistentFlags().StringVarP(&adataString, "adata", "", "", "Use [string] as ADATA for AES-GCM")
+	encryptCmd.LocalFlags().StringVarP(&adataString, "adata", "", "", "Use [string] as ADATA for AES-GCM")
+	decryptCmd.LocalFlags().StringVarP(&adataString, "adata", "", "", "Use [string] as ADATA for AES-GCM")
 }
 
 var (
 	adataString string
 
 	encryptCmd = &cobra.Command{
-		Use:   "enc [IN] [OUT]",
-		Short: "Encrypt input with AES-256-GCM",
-		Long:  ``,
-		RunE:  enc,
+		Use:               "enc [IN] [OUT]",
+		Short:             "Encrypt input with AES-256-GCM",
+		Long:              ``,
+		PersistentPreRunE: encPreChecks,
+		RunE:              enc,
 	}
 
 	decryptCmd = &cobra.Command{
-		Use:   "dec [KEY] [IN] [OUT]",
-		Short: "Decrypt input with AES-256-GCM",
-		Long:  ``,
-		RunE:  dec,
+		Use:               "dec [KEY] [IN] [OUT]",
+		Short:             "Decrypt input with AES-256-GCM",
+		Long:              ``,
+		PersistentPreRunE: encPreChecks,
+		RunE:              dec,
 	}
 )
 
@@ -102,7 +104,7 @@ func enc(cmd *cobra.Command, args []string) error {
 	// Provide Addtional flag checks
 	// Warn user if encrypting but not providing key material
 	if len(passwordString) == 0 && len(keyString) == 0 {
-		fmt.Println("Warning: No key specified; A randomly generated key will be used")
+		fmt.Println("WARNING: No key specified; A randomly generated key will be used")
 	}
 
 	symmetricBoilerPlate(&operation)

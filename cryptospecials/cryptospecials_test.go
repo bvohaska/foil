@@ -145,16 +145,16 @@ func TestRSAKeySave(t *testing.T) {
 	*/
 
 	// Test saving a RSA private key
-	dest := "IAMAPrivKey.pem"
+	dest := "IAMAPrivKeyTest.pem"
 	privKey, err := RSAKeyGen(2048)
-	err = RSAKeySave(privKey, false, &dest, false)
+	err = RSAKeySave(privKey, false, false, &dest, false)
 	if err != nil {
 		t.Errorf("FAIL - %v\n", err)
 	}
 
 	// Test saving a RSA public key
-	dest = "IAMAPubKey.pem"
-	err = RSAKeySave(privKey, true, &dest, true)
+	dest = "IAMAPubKeyTest.pem"
+	err = RSAKeySave(privKey, true, false, &dest, true)
 	if err != nil {
 		t.Errorf("FAIL - %v\n", err)
 	}

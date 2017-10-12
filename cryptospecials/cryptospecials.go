@@ -159,7 +159,7 @@ func RSAKeyGen(keySize int) (*rsa.PrivateKey, error) {
 }
 
 // RSAKeySave is an exportable function
-func RSAKeySave(privKey *rsa.PrivateKey, savePubKey bool, dest *string, verbose bool) error {
+func RSAKeySave(privKey *rsa.PrivateKey, savePubKey bool, printStdIn bool, dest *string, verbose bool) error {
 
 	var (
 		derBytes []byte
@@ -200,13 +200,19 @@ func RSAKeySave(privKey *rsa.PrivateKey, savePubKey bool, dest *string, verbose 
 		}
 	}
 
-	if *dest == "" {
-		*dest = "IAMAprivKey.pem"
+	// This logic allows the RSA key to be printed to stdin & saved to file
+	if *dest == "" && printStdIn == false {
+		fmt.Println("No destination provided. Saving file as: ./IAMArsaKey.pem")
+		*dest = "IAMArsaKey.pem"
+	} else if *dest == "" && printStdIn == true {
+		fmt.Println(pemBytes)
 	}
 	// Write the PEM to file
-	err = ioutil.WriteFile(*dest, pemBytes, 0644)
-	if err != nil {
-		return fmt.Errorf("Error: %v", err)
+	if len(*dest) > 0 {
+		err = ioutil.WriteFile(*dest, pemBytes, 0644)
+		if err != nil {
+			return fmt.Errorf("Error: %v", err)
+		}
 	}
 
 	return nil

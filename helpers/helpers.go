@@ -18,7 +18,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
-	"flag"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -37,105 +36,6 @@ const BlockSize = 16
 *  64GB = 64 * 1024 *1024*1024
  */
 const MaxFileSize = 68719476736
-
-//CliParams is an exportable STRUCT
-/*
-*  CliParams is the basis struct for storing all of the data associated with CLI flags. This struct is
-*  used in nearly every function in the main package. Take care in removing any fields  or changing the
-*  order within the struct.
- */
-type CliParams struct {
-	CliFileSource      *string
-	CliFileDestination *string
-	CliStdIn           *string
-	CliKey             *string
-	CliPassword        *string
-	CliADATA           *string
-	CliStdOut          *bool
-	CliEncrypt         *bool
-	CliDecrypt         *bool
-	CliVerbose         *bool
-	Operation          *string
-}
-
-//CliFlags is an exportable FUNCTION
-/*
-*  CliFlags parses all command-line flags and input. CliFlags also contains base logic for determining
-*  if certain flags are (1) mutually exclusive, (2) must be set, or (3) have another logical relationship.
-*  Be EXREMELY careful when editing this function. Changes to the logic here could have unforseen effects
-*  as this function is used in EVERY function in the encryptorCore main package.
- */
-func CliFlags() (CliParams, bool) {
-
-	var operation *string
-
-	/*
-	*  The following block defines all available command-line options. Ther is no default ouput behaviour
-	*  and the application will abort if no output direction is given.
-	 */
-	cliFileSource := flag.String("source", "", "Set the location of the input file")
-	cliFileDestination := flag.String("target", "", "Set the target location of the output file")
-	cliStdIn := flag.String("textin", "", "Use the string \"[STRING]\" following -txtin as the source file")
-	cliKey := flag.String("key", "", "Instruct the applicatiion to use a user provided key (hex only)")
-	cliPassword := flag.String("password", "", "Instruct the application to use the ASCII password following -password")
-	cliADATA := flag.String("adata", "", "Provide ASCII additional authenticated data following -adata")
-	cliStdOut := flag.Bool("textout", false, "Print output to stdin")
-	cliEncrypt := flag.Bool("encrypt", false, "Instruct the application to perform encryption")
-	cliDecrypt := flag.Bool("decrypt", false, "Instruct the applicatiion to perform decryption")
-	cliVerbose := flag.Bool("verbose", false, "Verbose Mode - reveals most of the internal variable state")
-
-	flag.Parse()
-
-	// Check to ensure mutually exclusive flags are not set
-	if *cliEncrypt && *cliDecrypt {
-		fmt.Println("You can select only one: -encrypt or -decrypt")
-		return CliParams{}, false
-	} else if *cliStdOut && len(*cliFileDestination) > 0 {
-		fmt.Println("You can select only one: -textout or -target")
-		return CliParams{}, false
-	} else if len(*cliFileSource) > 0 && len(*cliStdIn) > 0 {
-		fmt.Println("You can select only one: -textin or -source")
-		return CliParams{}, false
-	} else if len(*cliPassword) > 0 && len(*cliKey) > 0 {
-		fmt.Println("You can select only one: -password or -key")
-		return CliParams{}, false
-	}
-
-	// Check to ensure the minimum set of flags are set
-	if (*cliEncrypt == false) && (*cliDecrypt == false) {
-		fmt.Println("You must select one: -encrypt or -decrypt")
-		return CliParams{}, false
-	} else if (*cliStdOut == false) && (len(*cliFileDestination) == 0) {
-		fmt.Println("You must select one: -textout or -target")
-		return CliParams{}, false
-	} else if (len(*cliFileSource) == 0) && (len(*cliStdIn) == 0) {
-		fmt.Println("You must select one: -textin or -source")
-		return CliParams{}, false
-	} else if (*cliEncrypt == true) && (len(*cliPassword) == 0) && (len(*cliKey) == 0) {
-		/*
-		*  This logic will allow for a use to encrypt wihtout a key or password. This is the only default
-		*  behaviour present in this application. When no key or password is given, a random key will be
-		*  generated, used, and printed to StdOut. The key will not be written to file. If this key is lost,
-		*  there is no way to recover it.
-		 */
-		fmt.Println("WARNING - You have not selected: -password or -key; A RANDOM key will be used!")
-	}
-
-	// Determine if the user requests an encryption or decryption operation
-	if *cliEncrypt {
-		temp := "encrypt"
-		operation = &temp
-	} else if *cliDecrypt {
-		temp := "decrypt"
-		operation = &temp
-	} else {
-		fmt.Println("CliFlags - Warning: Unknown error in Encrypt/Decrypt selection")
-		return CliParams{}, false
-	}
-
-	// SUCCESS
-	return CliParams{cliFileSource, cliFileDestination, cliStdIn, cliKey, cliPassword, cliADATA, cliStdOut, cliEncrypt, cliDecrypt, cliVerbose, operation}, true
-}
 
 //CliInputFileLogic is an exportable FUNCTION
 /*
