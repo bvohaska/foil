@@ -6,11 +6,10 @@ import (
 
 func init() {
 	// List of all top-level flags used in Foil
-	FoilCmd.PersistentFlags().StringVarP(&keyString, "key", "k", "", "Use [hex] as the KEY for AES-GCM")
-	FoilCmd.PersistentFlags().StringVarP(&passwordString, "password", "p", "", "Use [string] (--> PBKDF2) as  KEY for AES-GCM")
+
 	FoilCmd.PersistentFlags().StringVarP(&inputPath, "in", "", "", "Read input as file from PATH=[string]")
 	FoilCmd.PersistentFlags().StringVarP(&outputPath, "out", "", "", "Save output as file located at PATH=[string]")
-	FoilCmd.PersistentFlags().StringVarP(&stdInString, "textin", "", "", "Read input from StdIn as \"[string]\"")
+	FoilCmd.PersistentFlags().StringVarP(&stdInString, "textin", "", "", "Read input from StdIn as [string]")
 	FoilCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "Display verbose output")
 	FoilCmd.PersistentFlags().BoolVarP(&stdOutBool, "textout", "", false, "Display output on StdOut")
 
@@ -19,10 +18,9 @@ func init() {
 	FoilCmd.AddCommand(authorCmd)
 
 	// Add dynamic commands
-	FoilCmd.AddCommand(encryptCmd)
-	FoilCmd.AddCommand(decryptCmd)
+	FoilCmd.AddCommand(aesCmd)
 	FoilCmd.AddCommand(rsaCmd)
-	//FoilCmd.AddCommand(vrfCmd)
+	FoilCmd.AddCommand(vrfCmd)
 	//FoilCmd.AddCommand(oprfCmd)
 
 	// Suppress Cobra internal error reporting in favor of Foil errors
@@ -31,13 +29,11 @@ func init() {
 
 // FoilCmd is an exportable function
 var (
-	Verbose        bool
-	stdOutBool     bool
-	inputPath      string
-	keyString      string
-	outputPath     string
-	passwordString string
-	stdInString    string
+	Verbose     bool
+	stdOutBool  bool
+	inputPath   string
+	outputPath  string
+	stdInString string
 
 	FoilCmd = &cobra.Command{
 		Use:   "foil",

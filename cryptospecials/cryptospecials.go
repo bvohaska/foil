@@ -30,6 +30,7 @@ var (
 //RSAVRF is an exportable struct
 type RSAVRF struct {
 	Proof []byte
+	Alpha []byte
 	Beta  []byte
 	*rsa.PrivateKey
 }
@@ -159,10 +160,10 @@ func (rep ECCVRF) Verify() {
 *  The RSA-VRF below is based on: https://eprint.iacr.org/2017/099.pdf. Alpha is
 *  the VRF mutual reference string.
  */
-func (vrf RSAVRF) Generate(alpha []byte, verbose bool) ([]byte, []byte, error) {
+func (vrf RSAVRF) Generate(alpha []byte, rsaPrivKey *rsa.PrivateKey, verbose bool) (proofBytes []byte, beta []byte, err error) {
 
-	// Check that vrf has values for N (big Int) and D (big Int) or return error
-	if vrf.N == zero || vrf.D == zero {
+	// Check that private key has values for N (big Int) and D (big Int) or return error
+	if rsaPrivKey.N == zero || rsaPrivKey.D == zero {
 		return nil, nil, errors.New("Error: No private key supplied")
 	}
 
@@ -170,7 +171,8 @@ func (vrf RSAVRF) Generate(alpha []byte, verbose bool) ([]byte, []byte, error) {
 		modLength int
 		proof     big.Int
 		outInt    big.Int
-		beta      []byte
+		//beta       []byte
+		//proofBytes []byte
 	)
 
 	/*
@@ -179,7 +181,7 @@ func (vrf RSAVRF) Generate(alpha []byte, verbose bool) ([]byte, []byte, error) {
 	*  If output is set to the length of N then the result of mgf1XOR could
 	*  be bigger than N which in tern will cause issues with RSA verification.
 	 */
-	modLength = ((vrf.N.BitLen() + 8) / 8) - 1
+	modLength = ((rsaPrivKey.N.BitLen() + 8) / 8) - 1
 	output := make([]byte, modLength-1)
 	hash256 := sha256.New()
 
@@ -191,7 +193,7 @@ func (vrf RSAVRF) Generate(alpha []byte, verbose bool) ([]byte, []byte, error) {
 	*  D is an RSA Secret!
 	 */
 	outInt.SetBytes(output)
-	proof.Exp(&outInt, vrf.D, vrf.N)
+	proof.Exp(&outInt, rsaPrivKey.D, rsaPrivKey.N)
 
 	hash256.Reset()
 	hash256.Write(proof.Bytes())
@@ -200,9 +202,9 @@ func (vrf RSAVRF) Generate(alpha []byte, verbose bool) ([]byte, []byte, error) {
 	if verbose {
 		fmt.Printf("****VRF.generate - Verbose Output****\n")
 
-		fmt.Println("RSA Pub Mod - N (big Int):", vrf.N)
-		fmt.Println("RSA Pub Exp - E (int):", vrf.E)
-		fmt.Println("SECRET - RSA Priv Exp - D (big Int):", vrf.D)
+		fmt.Println("RSA Pub Mod - N (big Int):", rsaPrivKey.N)
+		fmt.Println("RSA Pub Exp - E (int):", rsaPrivKey.E)
+		fmt.Println("SECRET - RSA Priv Exp - D (big Int):", rsaPrivKey.D)
 
 		fmt.Printf("Alpha (string): %s\n", alpha)
 		fmt.Printf("Alpha (hex): %x\n", alpha)
@@ -228,10 +230,10 @@ func (vrf RSAVRF) Generate(alpha []byte, verbose bool) ([]byte, []byte, error) {
 *  The RSA-VRF below is based on: https://eprint.iacr.org/2017/099.pdf. Alpha is
 *  the VRF mutual reference string.
  */
-func (vrf RSAVRF) Verify(alpha []byte, pubKey *rsa.PublicKey, verbose bool) (bool, error) {
+func (vrf RSAVRF) Verify(alpha []byte, beta []byte, proof []byte, pubKey *rsa.PublicKey, verbose bool) (validity bool, err error) {
 
-	// Check that vrf has values for proof and beta or return error
-	if vrf.Proof == nil || vrf.Beta == nil {
+	// Check that proof and beta have values or return error
+	if proof == nil || beta == nil {
 		return false, errors.New("Error: H(beta) or Beta not supplied")
 	}
 	// Check that the pub key has values for N (bit Int) and E (int) or return error
@@ -253,22 +255,22 @@ func (vrf RSAVRF) Verify(alpha []byte, pubKey *rsa.PublicKey, verbose bool) (boo
 	*  If output is set to the length of N then the result of mgf1XOR could
 	*  be bigger than N which in tern will cause issues with RSA verification.
 	 */
-	modLength = ((vrf.N.BitLen() + 8) / 8) - 1
+	modLength = ((pubKey.N.BitLen() + 8) / 8) - 1
 	mgf1Alpha = make([]byte, modLength-1)
 	hash256 := sha256.New()
-
 	mgf1XOR(mgf1Alpha, hash256, alpha)
 
-	hash := sha256.New()
-	hash.Write(vrf.Proof)
-	betaCheck = hash.Sum(nil)
+	// Generate a test beta - H(proof)
+	hash256.Reset()
+	hash256.Write(proof)
+	betaCheck = hash256.Sum(nil)
 
 	/*
 	*  Generate: mgf1Check = (MGF1(alpha)^d)^e
 	*  Eventually, want to check: mgf1Check ?= MGF1(alpha)
 	 */
 	e := big.NewInt(int64(pubKey.E))
-	intCheck.SetBytes(vrf.Proof)
+	intCheck.SetBytes(proof)
 	mgf1Check.Exp(&intCheck, e, pubKey.N)
 
 	if verbose {
@@ -279,7 +281,7 @@ func (vrf RSAVRF) Verify(alpha []byte, pubKey *rsa.PublicKey, verbose bool) (boo
 
 		fmt.Println("vrf.proof (big Int)", intCheck)
 		fmt.Printf("H(vrf.proof) - should be equal to Beta (hex): %x\n", betaCheck)
-		fmt.Printf("Beta (hex): %x\n", vrf.Beta)
+		fmt.Printf("Beta (hex): %x\n", beta)
 
 		fmt.Printf("MGF1(Alpha) (hex): %x\n", mgf1Alpha)
 		fmt.Println("MGF1Check (Big Int):", mgf1Check)
@@ -287,7 +289,7 @@ func (vrf RSAVRF) Verify(alpha []byte, pubKey *rsa.PublicKey, verbose bool) (boo
 	}
 
 	// Check: compare the bytes of betaCheck = H(vrf.proof) ?= beta
-	if bytes.Compare(betaCheck, vrf.Beta) != 0 {
+	if bytes.Compare(betaCheck, beta) != 0 {
 		if verbose {
 			fmt.Println("FAIL - Could not verify: Beta == H(proof)")
 		}

@@ -3,6 +3,7 @@ package commands
 import (
 	"crypto/rsa"
 	"errors"
+	"fmt"
 	"foil/cryptospecials"
 
 	"github.com/spf13/cobra"
@@ -29,6 +30,36 @@ var (
 		RunE:              doRSA,
 	}
 )
+
+/*
+*  Check all of the required flags for rsa command to run successfully. Ensure
+*  that there are no flags set that would lead to logical faults.
+ */
+func rsaPreChecks(cmd *cobra.Command, args []string) error {
+	if len(args) > 0 {
+		return fmt.Errorf("Error: Unknown arguments: %v", args)
+	}
+	// Check to make sure the appropriate flags are set
+	if stdOutBool == false && len(outputPath) == 0 {
+		return errors.New("Error: Must specify an output method")
+	} else if len(inputPath) == 0 && rsaGen == false {
+		return errors.New("Error: Must specify an input file")
+	} else if rsaGen == true && sizeRSA == 0 {
+		return errors.New("Error: Must specify a key size")
+	}
+
+	// Check to make sure the appropriate flags are set
+	if stdOutBool == false && len(outputPath) == 0 {
+		return errors.New("Error: Must specify an output method")
+	}
+
+	// RSA will not take StdIn as source input
+	if len(stdInString) > 0 {
+		return errors.New("Error: Reading from StdIn not available for RSA")
+	}
+
+	return nil
+}
 
 func doRSA(cmd *cobra.Command, args []string) error {
 

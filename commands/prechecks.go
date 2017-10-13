@@ -2,7 +2,6 @@ package commands
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/spf13/cobra"
 )
@@ -40,48 +39,5 @@ func stdChecks(min int, max int, cmd *cobra.Command, args []string) error {
 	}
 
 	// If success, return nil
-	return nil
-}
-
-// Check all of the required flags for the encrypt and decrypt commands to run successfully
-func encPreChecks(cmd *cobra.Command, args []string) error {
-
-	err := stdChecks(0, 5, cmd, args)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// Check all of the required flags for rsa command to run successfully
-func rsaPreChecks(cmd *cobra.Command, args []string) error {
-	if len(args) > 0 {
-		return fmt.Errorf("Error: Unknown arguments: %v", args)
-	}
-	// Check to make sure the appropriate flags are set
-	if stdOutBool == false && len(outputPath) == 0 {
-		return errors.New("Error: Must specify an output method")
-	} else if len(inputPath) == 0 && rsaGen == false {
-		return errors.New("Error: Must specify an input file")
-	} else if rsaGen == true && sizeRSA == 0 {
-		return errors.New("Error: Must specify a key size")
-	}
-
-	// Check to make sure the appropriate flags are set
-	if stdOutBool == false && len(outputPath) == 0 {
-		return errors.New("Error: Must specify an output method")
-	}
-
-	// RSA will not take StdIn as source input
-	if len(stdInString) > 0 {
-		return errors.New("Error: Reading from StdIn not available for RSA")
-	}
-
-	return nil
-}
-
-func vrfPreChecks(cmd *cobra.Command, args []string) error {
-
 	return nil
 }

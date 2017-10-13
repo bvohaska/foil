@@ -28,30 +28,58 @@ import (
 
 func init() {
 
-	// Define flags used by Encrypt/Decrypt and sub commands.
-	encryptCmd.LocalFlags().StringVarP(&adataString, "adata", "", "", "Use [string] as ADATA for AES-GCM")
-	decryptCmd.LocalFlags().StringVarP(&adataString, "adata", "", "", "Use [string] as ADATA for AES-GCM")
+	// Define flags used by all sub commands
+	aesCmd.PersistentFlags().StringVarP(&keyString, "key", "k", "", "Use [hex] as the KEY for AES-GCM")
+	aesCmd.PersistentFlags().StringVarP(&passwordString, "password", "p", "", "Use [string] (--> PBKDF2) as  KEY for AES-GCM")
+	// Define flags used by Encrypt/Decrypt sub commands
+	encryptCmd.PersistentFlags().StringVarP(&adataString, "adata", "", "", "Use [string] as ADATA for AES-GCM")
+	decryptCmd.PersistentFlags().StringVarP(&adataString, "adata", "", "", "Use [string] as ADATA for AES-GCM")
+
+	// Add encrypt and decrypt to aesCmd
+	aesCmd.AddCommand(encryptCmd)
+	aesCmd.AddCommand(decryptCmd)
 }
 
 var (
-	adataString string
+	adataString    string
+	passwordString string
+	keyString      string
+
+	aesCmd = &cobra.Command{
+		Use:               "aes",
+		Short:             "Encrypt or decrypt input with AES-256-GCM",
+		Long:              ``,
+		PersistentPreRunE: aesPreChecks,
+	}
 
 	encryptCmd = &cobra.Command{
-		Use:               "enc [IN] [OUT]",
-		Short:             "Encrypt input with AES-256-GCM",
-		Long:              ``,
-		PersistentPreRunE: encPreChecks,
-		RunE:              enc,
+		Use:   "enc [IN] [OUT]",
+		Short: "Encrypt input with AES-256-GCM",
+		Long:  ``,
+		RunE:  enc,
 	}
 
 	decryptCmd = &cobra.Command{
-		Use:               "dec [KEY] [IN] [OUT]",
-		Short:             "Decrypt input with AES-256-GCM",
-		Long:              ``,
-		PersistentPreRunE: encPreChecks,
-		RunE:              dec,
+		Use:   "dec [KEY] [IN] [OUT]",
+		Short: "Decrypt input with AES-256-GCM",
+		Long:  ``,
+		RunE:  dec,
 	}
 )
+
+/*
+*  Check all of the required flags for the encrypt and decrypt commands to run
+*  successfully. Ensure that there are no flags set that would lead to logical faults
+ */
+func aesPreChecks(cmd *cobra.Command, args []string) error {
+
+	err := stdChecks(0, 5, cmd, args)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
 
 /*
 *  Perform all required boilerplate operations for AES-256-GCM encryption. This is the main
