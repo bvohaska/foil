@@ -78,7 +78,7 @@ For encryption, simply follow the usuage instructions to supply an input and spe
 
 ```bash
 
-$: ./foil enc --textin "Attack at dawn!" --textout --password "LegitPa$$word1999" --adata "I love encryption"
+$: ./foil aes enc --textin "Attack at dawn!" --textout --password "LegitPa$$word1999" --adata "I love encryption"
 
 ```
 
@@ -88,7 +88,7 @@ For decryption, you must supply a key (hex) or password in addition to an input 
 
 ```bash
 
-$: ./foil dec --textin [hex of ciphertext] --textout --password "LegitPa$$word1999" --adata "I love encryption"
+$: ./foil aes dec --textin [hex of ciphertext] --textout --password "LegitPa$$word1999" --adata "I love encryption"
 
 ```
 
