@@ -38,10 +38,10 @@ var (
 	FoilCmd = &cobra.Command{
 		Use:   "foil",
 		Short: "foil is CLI crypto-playground with many features.",
-		Long: `
-Foil is a CLI crypto-playground. It was lovingly built to test out new and exciting cryptograpic mechanisms 
-for those without too much cryptographic background. Foil attempts to minimize the number of paths toward using 
-its crypto in a *bad* way.`,
+		Long: "Foil is a CLI crypto-playground. It was lovingly built to test out" +
+			"\nnew and exciting cryptograpic mechanisms for those without too" +
+			"\nmuch cryptographic background. Foil attempts to minimize the" +
+			"\nnumber of paths toward using its crypto in a *bad* way.",
 	}
 )
 

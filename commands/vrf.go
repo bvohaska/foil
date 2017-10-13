@@ -117,14 +117,18 @@ func vrfVerChecks(cmd *cobra.Command, args []string) error {
 func doGenVRF(cmd *cobra.Command, args []string) error {
 
 	var (
-		err error
+		err   error
+		proof []byte
+		beta  []byte
 	)
 
 	if typeRSA {
-		err = genRsaVrf()
+		proof, beta, err = genRsaVrf()
 		if err != nil {
 			return err
 		}
+		fmt.Printf("VRF Proof (hex): %x\n", proof)
+		fmt.Printf("VRF Beta - H(Proof) (hex): %x\n", beta)
 	} else if typeECC {
 		err = genEccVrf()
 		if err != nil {
@@ -138,13 +142,23 @@ func doGenVRF(cmd *cobra.Command, args []string) error {
 func doVerVRF(cmd *cobra.Command, args []string) error {
 
 	var (
-		err error
+		validVRF bool
+		err      error
 	)
 
 	if typeRSA {
-		err = verRsaVrf()
+		validVRF, err = verRsaVrf()
 		if err != nil {
 			return err
+		}
+		/*
+		*  Inform the user about the VRF validity. There is currently no standard for VRF
+		*  output. Printing to StdIn in the meantime.adataString
+		 */
+		if validVRF {
+			fmt.Printf("VRF Proof & Beta are valid\n")
+		} else {
+			fmt.Printf("VRF Proof & Beta are NOT valid\n")
 		}
 	} else if typeECC {
 		err = verEccVrf()
@@ -161,7 +175,7 @@ func doVerVRF(cmd *cobra.Command, args []string) error {
 *  (1) an alpha (might be shared only with the generator and verifier),
 *  (2) RSA private key
  */
-func genRsaVrf() error {
+func genRsaVrf() ([]byte, []byte, error) {
 
 	var (
 		err     error
@@ -173,20 +187,17 @@ func genRsaVrf() error {
 	// Load an RSA private key from file; store in RSAVRF struct
 	vrfData.PrivateKey, err = cryptospecials.RSAPrivKeyLoad(&pathPriv, Verbose)
 	if err != nil {
-		return err
+		return nil, nil, err
 	}
 
 	// Generate a VRF proof and beta (H(proof))
 	vrfData.Proof, vrfData.Beta, err = vrfData.Generate(vrfData.Alpha, vrfData.PrivateKey, Verbose)
 	if err != nil {
-		return err
+		return nil, nil, err
 	}
 
 	// There is currently no standard for VRF output. Printing raw hex to StdIn in the meantime
-	fmt.Printf("VRF Proof (hex): %x\n", vrfData.Proof)
-	fmt.Printf("VRF Beta - H(Proof) (hex): %x\n", vrfData.Beta)
-
-	return nil
+	return vrfData.Proof, vrfData.Beta, nil
 }
 
 func genEccVrf() error {
@@ -203,7 +214,7 @@ func genEccVrf() error {
 *  (3) proof (public)
 *  (4) RSA public key of the generator
  */
-func verRsaVrf() error {
+func verRsaVrf() (bool, error) {
 
 	var (
 		validVRF bool
@@ -216,37 +227,27 @@ func verRsaVrf() error {
 	// Read beta and proof as hex and store as useable bytes
 	vrfData.Proof, err = hex.DecodeString(proofString)
 	if err != nil {
-		return err
+		return false, err
 	}
 	vrfData.Beta, err = hex.DecodeString(betaString)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	// Load an RSA public key from file
 	pubKey, err = cryptospecials.RSAPubKeyLoad(&pathPub, Verbose)
 	if err != nil {
-		return err
+		return false, err
 	}
 	//vrfData.PublicKey = pubKey //broken // TODO: Fix assignment SegFault
 
 	// Verify that the proof, beta, and alpha are valid // &vrfData.PublicKey changed to pubKey
 	validVRF, err = vrfData.Verify(vrfData.Alpha, vrfData.Beta, vrfData.Proof, pubKey, Verbose)
 	if err != nil {
-		return err
+		return false, err
 	}
 
-	/*
-	*  Inform the user about the VRF validity. There is currently no standard for VRF
-	*  output. Printing to StdIn in the meantime.adataString
-	 */
-	if validVRF {
-		fmt.Printf("VRF Proof & Beta are valid\n")
-	} else {
-		fmt.Printf("VRF Proof & Beta are NOT valid\n")
-	}
-
-	return nil
+	return validVRF, nil
 }
 
 func verEccVrf() error {
