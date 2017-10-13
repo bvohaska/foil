@@ -1,35 +1,33 @@
 /*
 *
 *
-*/
+ */
 
-package main
+package helpers
 
 import (
-	"testing"
-	"encryptorcore/helpers"
 	"crypto/aes"
 	"crypto/cipher"
 	"fmt"
-) 
+	"testing"
+)
 
 /*
 *  Basic expected input-output test for AESRandomBytes
-*/
-func TestAESRandomBytes (t *testing.T) {
+ */
+func TestAESRandomBytes(t *testing.T) {
 
 	var (
-		toughTests bool
+		toughTests   bool
 		successSlice []int
-		trialRandom []byte
+		trialRandom  []byte
 	)
 	toughTests = true
 
-	
 	if toughTests {
-		for i := 0; i < 129; i++{
+		for i := 0; i < 129; i++ {
 			trialRandom = make([]byte, i)
-			didISucceed := helpers.GetAESRandomBytes(trialRandom, false)
+			didISucceed := GetAESRandomBytes(trialRandom, false)
 			if didISucceed == nil {
 				successSlice = append(successSlice, i)
 			}
@@ -37,7 +35,7 @@ func TestAESRandomBytes (t *testing.T) {
 		for _, value := range successSlice {
 			if value == 12 || value == 16 || value == 32 {
 				fmt.Printf("PASS - GetAESRandomBytes: %d bytes\n", value)
-			} 
+			}
 		}
 
 		if len(successSlice) != 3 || successSlice[0] != 12 || successSlice[1] != 16 || successSlice[2] != 32 {
@@ -49,8 +47,8 @@ func TestAESRandomBytes (t *testing.T) {
 
 /*
 *  Test expected output of AESCore vs manual AES operations
-*/
-func TestAESCore (t *testing.T) {
+ */
+func TestAESCore(t *testing.T) {
 
 	/* AES Test vectors: https://csrc.nist.gov/projects/cryptographic-algorithm-validation-program
 	key := 53382df51d7d4d17964e178d9ccb2dea7ae8e2238c3a91a392d53fba523f48c4
@@ -62,29 +60,31 @@ func TestAESCore (t *testing.T) {
 
 	var (
 		aesKey []byte
-		aesIV []byte
+		aesIV  []byte
 
 		plaintext string
-		password string
-		
+		password  string
+
 		verbose bool
 	)
-	
+
 	verbose = false
 	// Test Plaintext
 	plaintext = "Attack at dawn! I have special characters: !@#(%*U@#)$(_+!@#_|||&&DROPFILLSELECT. This is the end of text"
 	// Test Password
 	password = "LegitPassword2"
 	// Expand test password and build insecure IV
-	aesKey = helpers.KeyFromPassword(&password, nil, 64, verbose)
+	aesKey = KeyFromPassword(&password, nil, 64, verbose)
 	aesIV = aesKey[:12]
 
 	// Test AES encryption and decryption
-	encAESResult, encError := helpers.AESCore(aesIV, aesKey, nil, []byte(plaintext), "encrypt", verbose)
+	operationEnc := "encrypt"
+	encAESResult, encError := AESCore(aesIV, aesKey, nil, []byte(plaintext), &operationEnc, verbose)
 	if encError != nil {
 		fmt.Println("Error in TEST ENCRYPTION:", encError)
 	}
-	decAESResult, decError := helpers.AESCore(aesIV, aesKey, nil, encAESResult, "decrypt", verbose)
+	operationDec := "decrypt"
+	decAESResult, decError := AESCore(aesIV, aesKey, nil, encAESResult, &operationDec, verbose)
 	if decError != nil {
 		fmt.Println("Error in TEST DECRYPTION:", decError)
 	}
@@ -110,14 +110,12 @@ func TestAESCore (t *testing.T) {
 	if plaintext != plaintext2 {
 		t.Errorf("FAIL - plaintext before and after enc/dec are not equivalent.")
 		fmt.Println("Plaintext:", plaintext)
-		fmt.Println("Plaintext after decryption:",plaintext2)
+		fmt.Println("Plaintext after decryption:", plaintext2)
 	}
 }
-
 
 // TestKeyFromPassword should be exported to another package
 //func TestKeyFromPassword () {}
 
-
-//TODO: Determine if it is possible to use Seal()/Open() on a file stream to give memory performance (size) optimization 
+//TODO: Determine if it is possible to use Seal()/Open() on a file stream to give memory performance (size) optimization
 //TODO: Automated testing framework, statespace traversal, and fuzzer
