@@ -23,6 +23,7 @@ func init() {
 	FoilCmd.AddCommand(decryptCmd)
 	FoilCmd.AddCommand(rsaCmd)
 	//FoilCmd.AddCommand(vrfCmd)
+	//FoilCmd.AddCommand(oprfCmd)
 
 	// Suppress Cobra internal error reporting in favor of Foil errors
 	FoilCmd.SilenceErrors = true

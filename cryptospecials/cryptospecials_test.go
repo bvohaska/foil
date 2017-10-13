@@ -1,7 +1,6 @@
 package cryptospecials
 
 import (
-	"bytes"
 	"crypto/elliptic"
 	"crypto/rsa"
 	"crypto/sha256"
@@ -46,7 +45,8 @@ func TestRSAKeyGen(t *testing.T) {
 *  Incomplete test. Requires test vectors. Test will FAIL in current form.
 *  Note: MGF1 uses SHA-1. This implementation uses SHA-256
  */
-func TestMGF1(t *testing.T) {
+/*
+ func TestMGF1(t *testing.T) {
 
 	var (
 		testVector1      []byte
@@ -75,61 +75,7 @@ func TestMGF1(t *testing.T) {
 
 	//fmt.Printf("The length of output is: %d\n The output is: %x\n", len(outputTest), outputTest)
 }
-
-/*
-*  This test does not garantee the cryptogrpahic viability of rsaVRF.generate() or rsaVRF.verfiy()
-*  instead it checks the consistancy of generate and verfiy to validate hte logic of EACH OTHER.
-*  Further testing and validation of the cryptography is required.append
- */
-func TestRSAVRFGenVerify(t *testing.T) {
-
-	var (
-		verifyCheck bool
-		verbose     bool
-		alpha       []byte
-		mgf1Alpha   []byte
-		err         error
-		rsaVrfTest  RSAVRF
-	)
-
-	// If set to true, most of the RSA and hashing parameters will be displayed
-	verbose = false
-
-	alpha = []byte("This is a test!")
-	mgf1Alpha = make([]byte, 255)
-	mgf1XOR(mgf1Alpha, sha256.New(), alpha)
-
-	// Expensive operation but allows for random testing which is critically important
-	rsaVrfTest.PrivateKey, err = RSAKeyGen(2048)
-	if err != nil {
-		t.Errorf("FAIL - Error in RSAKeyGen(2048)")
-	}
-
-	rsaVrfTest.proof, rsaVrfTest.beta, err = rsaVrfTest.generate(alpha, verbose)
-	if err != nil {
-		t.Errorf("Internal Error: %v\n", err)
-	}
-	verifyCheck, err = rsaVrfTest.verify(mgf1Alpha, &rsaVrfTest.PublicKey, verbose)
-	if err != nil {
-		t.Errorf("Internal Error: %v\n", err)
-	}
-	if verifyCheck == false {
-		t.Errorf("FAIL - VRF verification failed")
-	}
-}
-
-func TestHash2Curve(t *testing.T) {
-
-	//data := []byte("I'm a string!")
-	data := []byte("I'm a string!")
-	h := sha256.New()
-	ec := elliptic.P256()
-
-	err := Hash2curve(data, h, ec.Params(), 1, false)
-	if err != nil {
-		t.Errorf("FAIL: %v\n", err)
-	}
-}
+*/
 
 func TestRSAKeySave(t *testing.T) {
 
@@ -193,4 +139,59 @@ func TestRSAKeyLoad(t *testing.T) {
 		t.Errorf("FAIL - %v\n", errPub)
 	}
 
+}
+
+/*
+*  This test does not garantee the cryptogrpahic viability of rsaVRF.generate() or rsaVRF.verfiy()
+*  instead it checks the consistancy of generate and verfiy to validate hte logic of EACH OTHER.
+*  Further testing and validation of the cryptography is required.append
+ */
+func TestRSAVRFGenVerify(t *testing.T) {
+
+	var (
+		verifyCheck bool
+		verbose     bool
+		alpha       []byte
+		mgf1Alpha   []byte
+		err         error
+		rsaVrfTest  RSAVRF
+	)
+
+	// If set to true, most of the RSA and hashing parameters will be displayed
+	verbose = false
+
+	alpha = []byte("This is a test!")
+	mgf1Alpha = make([]byte, 255)
+	mgf1XOR(mgf1Alpha, sha256.New(), alpha)
+
+	// Expensive operation but allows for random testing which is critically important
+	rsaVrfTest.PrivateKey, err = RSAKeyGen(2048)
+	if err != nil {
+		t.Errorf("FAIL - Error in RSAKeyGen(2048)")
+	}
+
+	rsaVrfTest.Proof, rsaVrfTest.Beta, err = rsaVrfTest.Generate(alpha, verbose)
+	if err != nil {
+		t.Errorf("Internal Error: %v\n", err)
+	}
+	verifyCheck, err = rsaVrfTest.Verify(alpha, &rsaVrfTest.PublicKey, verbose)
+	if err != nil {
+		t.Errorf("Internal Error: %v\n", err)
+	}
+	if verifyCheck == false {
+		t.Errorf("FAIL - VRF verification failed")
+	}
+}
+
+func TestHash2Curve(t *testing.T) {
+
+	//data := []byte("I'm a string!")
+	data := []byte("I'm a string!")
+	h := sha256.New()
+	ec := elliptic.P256()
+
+	err := Hash2curve(data, h, ec.Params(), 1, false)
+	if err != nil {
+		t.Errorf("FAIL: %v\n", err)
+	}
 }
