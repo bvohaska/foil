@@ -8,6 +8,10 @@
 *		-Brian
  */
 
+/*
+ *	RSA generation, load, and save functions are defined here
+ */
+
 package cryptospecials
 
 import (
@@ -41,6 +45,10 @@ func RSAKeyGen(keySize int) (*rsa.PrivateKey, error) {
 }
 
 // RSAKeySave is an exportable function
+/*
+*  RSAKeySave saves a public or private RSA key from a private RSA key. Files
+*  are saved as PEM.
+ */
 func RSAKeySave(privKey *rsa.PrivateKey, savePubKey bool, printStdIn bool, dest *string, verbose bool) error {
 
 	var (

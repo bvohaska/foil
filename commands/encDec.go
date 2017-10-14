@@ -29,11 +29,11 @@ import (
 func init() {
 
 	// Define flags used by all sub commands
-	aesCmd.PersistentFlags().StringVarP(&keyString, "key", "k", "", "Use [hex] as the KEY for AES-GCM")
-	aesCmd.PersistentFlags().StringVarP(&passwordString, "password", "p", "", "Use [string] (--> PBKDF2) as  KEY for AES-GCM")
+	aesCmd.PersistentFlags().StringVarP(&keyString, "key", "k", "", "use [hex] as the KEY for AES-GCM")
+	aesCmd.PersistentFlags().StringVarP(&passwordString, "password", "p", "", "use [string] (--> PBKDF2) as  KEY for AES-GCM")
 	// Define flags used by Encrypt/Decrypt sub commands
-	encryptCmd.PersistentFlags().StringVarP(&adataString, "adata", "", "", "Use [string] as ADATA for AES-GCM")
-	decryptCmd.PersistentFlags().StringVarP(&adataString, "adata", "", "", "Use [string] as ADATA for AES-GCM")
+	encryptCmd.PersistentFlags().StringVarP(&adataString, "adata", "", "", "use [string] as ADATA for AES-GCM")
+	decryptCmd.PersistentFlags().StringVarP(&adataString, "adata", "", "", "use [string] as ADATA for AES-GCM")
 
 	// Add encrypt and decrypt to aesCmd
 	aesCmd.AddCommand(encryptCmd)
