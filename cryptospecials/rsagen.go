@@ -120,16 +120,16 @@ func RSAPrivKeyLoad(source *string, verbose bool) (*rsa.PrivateKey, error) {
 	// Read raw PEM file
 	rawPem, err = ioutil.ReadFile(*source)
 	if err != nil {
-		return privKey, fmt.Errorf("Error: %v", err)
+		return nil, fmt.Errorf("Error: %v", err)
 	}
 	// Decode raw PEM into private key
 	pemData, _ := pem.Decode(rawPem)
 	if pemData == nil {
-		return privKey, errors.New("Error: Unable to parse PEM file - it may be empty or not in PEM format")
+		return nil, errors.New("Error: Unable to parse PEM file - it may be empty or not in PEM format")
 	}
 	privKey, err = x509.ParsePKCS1PrivateKey(pemData.Bytes)
 	if err != nil {
-		return privKey, fmt.Errorf("Error: %v", err)
+		return nil, fmt.Errorf("Error: %v", err)
 	}
 	if verbose {
 		fmt.Println("SECRET - rawPem:", rawPem)
