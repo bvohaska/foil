@@ -41,7 +41,7 @@ var (
 		Long: "Foil is a CLI crypto-playground. It was lovingly built to test out" +
 			"\nnew and exciting cryptograpic mechanisms for those without too" +
 			"\nmuch cryptographic background. Foil attempts to minimize the" +
-			"\nnumber of paths toward using its crypto in a *bad* way.",
+			"\nnumber of ways one can use foil crypto in a \"bad\" way.",
 	}
 )
 
