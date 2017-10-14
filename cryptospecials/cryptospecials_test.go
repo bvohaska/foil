@@ -216,17 +216,17 @@ func TestHash2Curve(t *testing.T) {
 func TestOPRFComplete(t *testing.T) {
 
 	var (
-		x, y               *big.Int
-		xMask, yMask, rInv *big.Int
-		xSalt, ySalt, s    *big.Int
-		xUnmask, yUnmask   *big.Int
-		xUnsalt, yUnsalt   *big.Int
-		xCheck, yCheck     *big.Int
-		verbose            bool
-		dataString         string
-		hData              []byte
-		rep                OPRF
-		err                error
+		x, y                  *big.Int
+		xMask, yMask, rInv    *big.Int
+		xSalt, ySalt, s, sOut *big.Int
+		xUnmask, yUnmask      *big.Int
+		xUnsalt, yUnsalt      *big.Int
+		xCheck, yCheck        *big.Int
+		verbose               bool
+		dataString            string
+		hData                 []byte
+		rep                   OPRF
+		err                   error
 	)
 
 	verbose = true
@@ -245,7 +245,7 @@ func TestOPRFComplete(t *testing.T) {
 		t.Errorf("FAIL - Error: %v", err)
 	}
 
-	xSalt, ySalt, err = rep.Salt(xMask, yMask, s, ec, verbose)
+	xSalt, ySalt, sOut, err = rep.Salt(xMask, yMask, s, ec, verbose)
 	if err != nil {
 		t.Errorf("FAIL - Error: %v", err)
 	}
@@ -283,6 +283,8 @@ func TestOPRFComplete(t *testing.T) {
 		fmt.Println("y      :", y)
 		fmt.Println("yCheck :", yCheck)
 		fmt.Println("yUnsalt:", yUnsalt)
+		fmt.Println("s:", s)
+		fmt.Println("sOut:", sOut)
 		t.Errorf("FAIL - Check points do not match")
 	}
 

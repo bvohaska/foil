@@ -84,12 +84,14 @@ func (rep OPRF) Mask(data string, h hash.Hash, ec elliptic.Curve, verbose bool) 
 
 	if verbose {
 		fmt.Println("Number of random bytes read:", numRead)
-		fmt.Println("Size of H(data):", len(hData))
+		fmt.Println("Size of H(data)            :", len(hData))
 		fmt.Println("SECRET x-coordinate:", x)
 		fmt.Println("SECRET y-coordinate:", y)
+		fmt.Println("SECRET r           :", r)
+		fmt.Println("SECRET r-inv       :", rInv)
 		fmt.Println("Masked x-coordinate:", xMask)
 		fmt.Println("Masked y-coordinate:", yMask)
-		fmt.Println("Is x/y Mask on the curve:", ec.IsOnCurve(xMask, yMask))
+		fmt.Println("Is Masked (x,y) on the curve:", ec.IsOnCurve(xMask, yMask))
 	}
 
 	// (x1,y1) = r*(x,y) : x, y <-- H(data) into ec
@@ -102,7 +104,7 @@ func (rep OPRF) Mask(data string, h hash.Hash, ec elliptic.Curve, verbose bool) 
 *  Sec. 3.1:
 *	eq. (3) S_i = s_i * M_i = s * (xMask, yMask) = s * r * (x, y)
  */
-func (rep OPRF) Salt(xMask *big.Int, yMask *big.Int, s *big.Int, ec elliptic.Curve, verbose bool) (xSalt *big.Int, ySalt *big.Int, err error) {
+func (rep OPRF) Salt(xMask *big.Int, yMask *big.Int, s *big.Int, ec elliptic.Curve, verbose bool) (xSalt *big.Int, ySalt *big.Int, sOut *big.Int, err error) {
 
 	/*
 	*  Ensure s is not zero; if so, generate a random number and return as error. Note:
@@ -110,30 +112,24 @@ func (rep OPRF) Salt(xMask *big.Int, yMask *big.Int, s *big.Int, ec elliptic.Cur
 	*  results will not be as anticipated.
 	 */
 	if s == nil || s == zero {
-
-		if verbose {
-			s = new(big.Int)
-			randBytes := make([]byte, (ec.Params().BitSize+8)/8-1)
-			rand.Reader.Read(randBytes)
-			s.SetBytes(randBytes)
-			s.Mod(s, ec.Params().N)
-		}
-
-		return nil, nil, fmt.Errorf("Error: s was zero or nil. If Verbose = true, an appropriate s will be generated")
+		s = new(big.Int)
+		randBytes := make([]byte, (ec.Params().BitSize+8)/8-1)
+		rand.Reader.Read(randBytes)
+		s.SetBytes(randBytes)
+		s.Mod(s, ec.Params().N)
+		fmt.Println("SECRET - s (new)  :", s)
 	}
 
 	xSalt, ySalt = ec.ScalarMult(xMask, yMask, s.Bytes())
 
 	if verbose {
-		fmt.Println("Is x/y Mask on the curve:", ec.IsOnCurve(xMask, yMask))
-		fmt.Println("Is x/y Salt on the curve:", ec.IsOnCurve(xSalt, ySalt))
+		fmt.Println("SECRET - s (used)  :", s)
 		fmt.Println("Salted x-coordinate:", xSalt)
 		fmt.Println("Salted y-coordinate:", ySalt)
-		fmt.Println("SECRET - s:", s)
-		fmt.Println("N         :", ec.Params().N)
+		fmt.Println("Is Salted (x, y) on the curve:", ec.IsOnCurve(xSalt, ySalt))
 	}
 
-	return xSalt, ySalt, nil
+	return xSalt, ySalt, s, nil
 }
 
 //Unmask is an exportable method
@@ -147,9 +143,9 @@ func (rep OPRF) Unmask(xSalt *big.Int, ySalt *big.Int, rInv *big.Int, ec ellipti
 	xUnmask, yUnmask = ec.ScalarMult(xSalt, ySalt, rInv.Bytes())
 
 	if verbose {
-		fmt.Println("Is x/y Unmask on the curve:", ec.IsOnCurve(xUnmask, yUnmask))
 		fmt.Println("Unmasked x-coordinate:", xUnmask)
 		fmt.Println("Unmasked y-coordinate:", yUnmask)
+		fmt.Println("Is Unmasked (x, y) on the curve:", ec.IsOnCurve(xUnmask, yUnmask))
 	}
 	return xUnmask, yUnmask, nil
 }
@@ -172,10 +168,7 @@ func (rep OPRF) unsalt(xUnmask *big.Int, yUnmask *big.Int, s *big.Int, ec ellipt
 	xUnsalt, yUnsalt = ec.ScalarMult(xUnmask, yUnmask, sInv.Bytes())
 
 	if verbose {
-		fmt.Println("Is x/y Unmask on the curve:", ec.IsOnCurve(xUnsalt, yUnsalt))
-		//randInt := new(big.Int)
-		//randInt, _ = rand.Int(rand.Reader, ec.Params().N)
-		//x, y, err0 := ec.Params()
+		fmt.Println("Is unsalted (x, y) on the curve:", ec.IsOnCurve(xUnsalt, yUnsalt))
 	}
 
 	return xUnsalt, yUnsalt, nil

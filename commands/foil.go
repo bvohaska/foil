@@ -21,7 +21,7 @@ func init() {
 	FoilCmd.AddCommand(aesCmd)
 	FoilCmd.AddCommand(rsaCmd)
 	FoilCmd.AddCommand(vrfCmd)
-	//FoilCmd.AddCommand(oprfCmd)
+	FoilCmd.AddCommand(oprfCmd)
 
 	// Suppress Cobra internal error reporting in favor of Foil errors
 	FoilCmd.SilenceErrors = true

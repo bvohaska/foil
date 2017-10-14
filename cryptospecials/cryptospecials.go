@@ -69,6 +69,7 @@ func Hash2curve(data []byte, h hash.Hash, eCurve *elliptic.CurveParams, curveTyp
 	if verbose {
 		fmt.Println("Length of xByte:", len(xByte))
 		fmt.Println("P:", eCurve.P)
+		fmt.Println("N:", eCurve.N)
 		fmt.Println("B:", eCurve.B)
 	}
 
@@ -117,9 +118,9 @@ func Hash2curve(data []byte, h hash.Hash, eCurve *elliptic.CurveParams, curveTyp
 
 	if verbose {
 		fmt.Printf("Number of Try & Increment iterations: %d\n", counter)
-		fmt.Println("x-xoordinate:", x)
+		fmt.Println("x-xoordinate           :", x)
+		fmt.Println("y-coordinate           :", y)
 		fmt.Println("x-coordinate bit length:", x.BitLen())
-		fmt.Println("y-coordinate:", y)
 		fmt.Println("y-coordinate bit length:", y.BitLen())
 	}
 
