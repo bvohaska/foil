@@ -30,21 +30,6 @@ type ECCVRF struct {
 	elliptic.Curve
 }
 
-//OPRF is an exportable struct
-type OPRF struct {
-	RSecret    []byte
-	RSecretInv []byte
-	elliptic.Curve
-}
-
-func (rep OPRF) Recv() {
-
-}
-
-func (rep OPRF) Send() {
-
-}
-
 func (rep ECCVRF) Generate() {
 
 }
