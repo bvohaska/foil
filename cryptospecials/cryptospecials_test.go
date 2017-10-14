@@ -146,8 +146,8 @@ func TestRSAKeyLoad(t *testing.T) {
 
 /*
 *  This test does not garantee the cryptogrpahic viability of rsaVRF.generate() or rsaVRF.verfiy()
-*  instead it checks the consistancy of generate and verfiy to validate hte logic of EACH OTHER.
-*  Further testing and validation of the cryptography is required.append
+*  instead it checks the consistancy of generate and verfiy to validate the logic of EACH OTHER.
+*  Further testing and validation of the cryptography is required.
  */
 func TestRSAVRFGenVerify(t *testing.T) {
 
@@ -208,6 +208,11 @@ func TestHash2Curve(t *testing.T) {
 	}
 }
 
+/*
+*  This test does not garantee the cryptogrpahic viability of rsaVRF.generate() or ecc OPRF
+*  instead it checks the consistancy of the Mask, Salt, and Unmaks logic with EACH OTHER.
+*  Further testing and validation of the cryptography is required.append
+ */
 func TestOPRFComplete(t *testing.T) {
 
 	var (

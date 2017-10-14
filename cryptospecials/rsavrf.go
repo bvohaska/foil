@@ -32,7 +32,7 @@ type RSAVRF struct {
 *  This function has NOT been tested for cryptographic soundness at this point.
 *  Do not use for cryptographic applications until it has been properly vetted.
 *  The RSA-VRF below is based on: https://eprint.iacr.org/2017/099.pdf. Alpha is
-*  the VRF mutual reference string.
+*  the VRF mutual reference string. NOTE: hashes use SHA-256 not SHA-1 for MGF1.
  */
 func (vrf RSAVRF) Generate(alpha []byte, rsaPrivKey *rsa.PrivateKey, verbose bool) (proofBytes []byte, beta []byte, err error) {
 
@@ -45,8 +45,6 @@ func (vrf RSAVRF) Generate(alpha []byte, rsaPrivKey *rsa.PrivateKey, verbose boo
 		modLength int
 		proof     big.Int
 		outInt    big.Int
-		//beta       []byte
-		//proofBytes []byte
 	)
 
 	/*
@@ -102,7 +100,7 @@ func (vrf RSAVRF) Generate(alpha []byte, rsaPrivKey *rsa.PrivateKey, verbose boo
 *  This function has NOT been tested for cryptographic soundness at this point.
 *  Do not use for cryptographic applications until it has been properly vetted.
 *  The RSA-VRF below is based on: https://eprint.iacr.org/2017/099.pdf. Alpha is
-*  the VRF mutual reference string.
+*  the VRF mutual reference string. NOTE: hashes use SHA-256 not SHA-1 for MGF1.
  */
 func (vrf RSAVRF) Verify(alpha []byte, beta []byte, proof []byte, pubKey *rsa.PublicKey, verbose bool) (validity bool, err error) {
 
