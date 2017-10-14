@@ -41,7 +41,7 @@ var (
 
 	oprfCmd = &cobra.Command{
 		Use:   "oprf",
-		Short: "Perform an ECC-ORF action",
+		Short: "Perform an ECC-OPRF action",
 		Long: "Foil can perform [mask], [salt], and [unmask] operations for it's internal" +
 			" ECC-OPERF based on: https://eprint.iacr.org/2017/111.",
 		PersistentPreRunE: oprfPreCheck,
