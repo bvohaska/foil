@@ -26,10 +26,26 @@ var (
 //ECCVRF is an exportable struct
 type ECCVRF struct {
 	Proof []byte
+	Alpha []byte
 	Beta  []byte
 	elliptic.Curve
 }
 
+//Generate is an exportable method
+/*
+* From 'Making NSEC5 Practical for DNSSEC'
+*	x (mod q), k (mod q)
+*	G = E => f = 1
+*	g = generator of order q
+*	PK = g^x => x*(gx, gy)
+*	SK = x
+*	H_1 = hashing into elliptic curve, ec
+*	lambda = Hash2Curve(alpha)^x = h^x
+*	c = SHA2(g,h, PK, lambda, g^k, h^k) as Int
+*	s = k-cx
+*	Proof = (lambda, c, s)
+*	Beta = H_2(lambda^f) : f = 1
+ */
 func (rep ECCVRF) Generate() {
 
 }
