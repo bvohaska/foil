@@ -36,11 +36,19 @@ Ensure that you have access to the "golang.org/x/crypto/pbkdf2" package. The 'go
 
 Install Cobra:  <https://github.com/spf13/cobra>
 
-Typically this can be done using hte following command:
+Typically, this can be done using the following command:
 
 ```bash
 
 $: go get -u github.com/spf13/cobra/cobra
+
+```
+
+If your go environnment is not set up to automatically fetch new golang.org packages, you will also need to install pbkdf2:
+
+```bash
+
+$: go get golang.org/x/crypto/pbkdf2
 
 ```
 
