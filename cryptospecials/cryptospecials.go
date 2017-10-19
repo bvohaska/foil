@@ -12,7 +12,6 @@ package cryptospecials
 
 import (
 	"crypto/elliptic"
-	"crypto/rand"
 	"fmt"
 	"hash"
 	"math/big"
@@ -24,151 +23,25 @@ var (
 	one  = big.NewInt(int64(1))
 )
 
-//Proof is an exportable struct
-// ECC VRF proof struct
-type Proof struct {
+//ECCPoint is an exportable struct
+type ECCPoint struct {
 	x *big.Int
 	y *big.Int
-	c *big.Int
-	s *big.Int
 }
 
-//ECCVRF is an exportable struct
-type ECCVRF struct {
-	EccProof Proof
-	Alpha    []byte
-	Beta     []byte
-	elliptic.Curve
-}
-
-//Generate is an exportable method
 /*
-* From 'Making NSEC5 Practical for DNSSEC'
-*  Pub: q, g, G, E, f
-*   x (mod q), k (mod q)
-*	G = E => f = 1
-*	g = generator of order q
-*  SK_vrf = rand(x)
-*  PK_vrf = g^x => x*(gx, gy)
-*  H_1 = hashing into elliptic curve, ec
-*	lambda = Hash2Curve(alpha)^x = h^x
-*	c = SHA2(g,h, PK, lambda, g^k, h^k) as Int
-*	s = k-cx
-*  Proof = (lambda, c, s)
-*  Beta = H_2(lambda^f) : f = 1
+*  hashThree is an internal function that performs the H_3 hash.
+*  zi is the collection of hash inputs as bytes,
+*    zi = {g, h, PK, lambda, u, v}
+*	    = {gx, gy, hx, hy, PKx, PKy, lambdax, lambday, ux, uy}
  */
-func (rep ECCVRF) Generate(alpha []byte, h hash.Hash, ec elliptic.Curve, verbose bool) (eccProof Proof, beta []byte, err error) {
+func hashThree(h3 hash.Hash, z ...[]byte) (digest []byte) {
 
-	/*
-	*	***** Special Note: H_2 & H_3 are the same in this implementation *****
-	*   ***** Special Note: G = E which implies f = 1 in this implementation *****
-	 */
-
-	var (
-		x, k, s, c *big.Int
-		xPub, yPub *big.Int
-		xh1, yh1   *big.Int
-		xh2, yh2   *big.Int
-		xgk, ygk   *big.Int
-		xhk, yhk   *big.Int
-	)
-
-	// Set big.Ints to zero
-	x, k, s, c = new(big.Int), new(big.Int), new(big.Int), new(big.Int)
-	xPub, yPub = new(big.Int), new(big.Int)
-	xh1, yh1 = new(big.Int), new(big.Int)
-	xh2, yh2 = new(big.Int), new(big.Int)
-	xgk, ygk = new(big.Int), new(big.Int)
-	xhk, yhk = new(big.Int), new(big.Int)
-
-	// Randomly select a secret key: x
-	x, err = rand.Int(rand.Reader, ec.Params().N)
-	if err != nil {
-		return Proof{}, nil, err
+	for _, zi := range z {
+		h3.Write(zi)
 	}
 
-	// Generate public key: x * (xG, yG) => g^x
-	xPub, yPub = ec.ScalarMult(ec.Params().Gx, ec.Params().Gy, x.Bytes())
-
-	// *** Step (1) ***
-	// Hash VRF input alpha into the elliptic curve => h1 = (xh1, yh1) (Try & Increment below)
-	xh1, yh1, err = Hash2curve(alpha, h, ec.Params(), 1, verbose)
-	if err != nil {
-		return Proof{}, nil, err
-	}
-	// Mask hx => x * h1 = x * (xh1, yh1)
-	xh2, yh2 = ec.ScalarMult(xh1, yh1, x.Bytes())
-
-	// *** Step (2) ***
-	// Randomly select k
-	k, err = rand.Int(rand.Reader, ec.Params().N)
-	if err != nil {
-		return Proof{}, nil, err
-	}
-	// Unwritten step: determine g^k and h^k
-	// g^k = k * g = k * (xG, yG)
-	xgk, ygk = ec.ScalarMult(ec.Params().Gx, ec.Params().Gy, k.Bytes())
-	// lambda = h^k = k * h = k * (xh1, yh1)
-	xhk, yhk = ec.ScalarMult(xh1, yh1, k.Bytes())
-
-	// *** Step (3) *** (Most of this can be rearranged to save memory; doing for ease of analysis)
-	// Compute c = H_3(g, h, g^x, h^x, g^k, h^k)
-	// This is where H_3 is first used. Note this implmentation uses H_2 = H_3
-	h.Reset()
-	// g = (xG, yG)
-	h.Write(ec.Params().Gx.Bytes())
-	h.Write(ec.Params().Gy.Bytes())
-	// h = (xh1, yh1)
-	h.Write(xh1.Bytes())
-	h.Write(yh1.Bytes())
-	// g^x = (xPub, yPub)
-	h.Write(xPub.Bytes())
-	h.Write(yPub.Bytes())
-	// h^x = (xh2, yh2)
-	h.Write(xh2.Bytes())
-	h.Write(yh2.Bytes())
-	// g^k = (xgk, ygk)
-	h.Write(xgk.Bytes())
-	h.Write(ygk.Bytes())
-	// h^k = (xhk, yhk)
-	h.Write(xhk.Bytes())
-	h.Write(yhk.Bytes())
-	// Assign hash to c as integer
-	c.SetBytes(h.Sum(nil))
-	c.Mod(c, ec.Params().N)
-
-	// *** Step (4) ****
-	// Determine: s = k - c*x (mod q)
-	s.Mul(c, x)
-	s.Sub(k, s)
-	s.Mod(s, ec.Params().N)
-
-	// *** Generate proof Beta & VRF output Pi
-	// Determine: Pi = (lambda, c, s) = ((xh1, yh1), c, s) ; Will be returned as (xh1, yh1, c, s) *big.Int
-	eccProof.x, eccProof.y, eccProof.c, eccProof.s = xh1, yh1, c, s
-	// Determine Beta = H_2(lambda^f) ; f = 1 in this implementation; H_2 = H_3 in this implementation
-	h.Reset()
-	// f = 1 => lambda^f = 1 * lambda = (xh1, yh1)
-	h.Write(xh1.Bytes())
-	h.Write(yh1.Bytes())
-	beta = h.Sum(nil)
-
-	if verbose {
-
-		fmt.Printf("SECRET - x      : %v\n", x)
-		fmt.Printf("SECRET - k      : %v\n", k)
-
-		fmt.Printf("Public - s      : %v\n", s)
-		fmt.Printf("Public - c      : %v\n", c)
-		fmt.Printf("Public - h^x - x: %v\n", xh1)
-		fmt.Printf("Public - h^x - y: %v\n", yh1)
-	}
-
-	return eccProof, beta, nil
-}
-
-func (rep ECCVRF) Verify() {
-
+	return h3.Sum(nil)
 }
 
 // Hash2curve is an exportable function

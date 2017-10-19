@@ -27,23 +27,3 @@ func TestHash2Curve(t *testing.T) {
 		t.Errorf("FAIL: Zero values returned as points\n")
 	}
 }
-
-/*
- * This test only test logical viability; crypto testing still required
- */
-func TestEccVrf(t *testing.T) {
-
-	var (
-		alpha  []byte
-		eccVrf ECCVRF
-		err    error
-	)
-
-	alpha = []byte("I am ecc VRF input")
-	ec := elliptic.P256()
-
-	eccVrf.EccProof, eccVrf.Beta, err = eccVrf.Generate(alpha, sha256.New(), ec, false)
-	if err != nil {
-		t.Errorf("FAIL - %v", err)
-	}
-}
