@@ -13,14 +13,14 @@ import (
 func init() {
 
 	// Add VRF specific flags
-	vrfCmd.PersistentFlags().BoolVarP(&typeRSA, "rsa", "", false, "Use a RSA-based VRF")
-	vrfCmd.PersistentFlags().BoolVarP(&typeECC, "ecc", "", false, "Use an ECC-based VRF")
-	vrfCmd.PersistentFlags().StringVarP(&alphaString, "alpha", "", "", "Use [string] as VRF input")
-	vrfCmd.PersistentFlags().StringVarP(&betaString, "beta", "", "", "Use [string] as H(proof) - Beta")
-	vrfCmd.PersistentFlags().StringVarP(&proofString, "proof", "", "", "Use [hex] as VRF proof for validation")
+	vrfCmd.PersistentFlags().BoolVarP(&typeRSA, "rsa", "", false, "use a RSA-based VRF")
+	vrfCmd.PersistentFlags().BoolVarP(&typeECC, "ecc", "", false, "use an ECC-based VRF")
+	vrfCmd.PersistentFlags().StringVarP(&alphaString, "alpha", "", "", "use [string] as VRF input")
+	vrfCmd.PersistentFlags().StringVarP(&betaString, "beta", "", "", "use [string] as H(proof) - Beta")
+	vrfCmd.PersistentFlags().StringVarP(&proofString, "proof", "", "", "use [hex] as VRF proof for validation")
 	// Add Gen/Ver specific flags
-	vrfGenCmd.PersistentFlags().StringVarP(&pathPriv, "priv", "", "", "Specify path to private key")
-	vrfVerCmd.PersistentFlags().StringVarP(&pathPub, "pub", "", "", "Specify path to pub key")
+	vrfGenCmd.PersistentFlags().StringVarP(&pathPriv, "priv", "", "", "specify path to private key")
+	vrfVerCmd.PersistentFlags().StringVarP(&pathPub, "pub", "", "", "specify path to pub key")
 
 	// Add VRF generate and verify as sub commands of vrf
 	vrfCmd.AddCommand(vrfGenCmd)

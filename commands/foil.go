@@ -7,11 +7,11 @@ import (
 func init() {
 	// List of all top-level flags used in Foil
 
-	FoilCmd.PersistentFlags().StringVarP(&inputPath, "in", "", "", "Read input as file from PATH=[string]")
-	FoilCmd.PersistentFlags().StringVarP(&outputPath, "out", "", "", "Save output as file located at PATH=[string]")
-	FoilCmd.PersistentFlags().StringVarP(&stdInString, "textin", "", "", "Read input from StdIn as [string]")
-	FoilCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "Display verbose output")
-	FoilCmd.PersistentFlags().BoolVarP(&stdOutBool, "textout", "", false, "Display output on StdOut")
+	FoilCmd.PersistentFlags().StringVarP(&inputPath, "in", "", "", "read input as file from PATH=[string]")
+	FoilCmd.PersistentFlags().StringVarP(&outputPath, "out", "", "", "save output as file located at PATH=[string]")
+	FoilCmd.PersistentFlags().StringVarP(&stdInString, "textin", "", "", "read input from StdIn as [string]")
+	FoilCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "display verbose output")
+	FoilCmd.PersistentFlags().BoolVarP(&stdOutBool, "textout", "", false, "display output on StdOut")
 
 	// Add static  commands
 	FoilCmd.AddCommand(versionCmd)
@@ -21,7 +21,7 @@ func init() {
 	FoilCmd.AddCommand(aesCmd)
 	FoilCmd.AddCommand(rsaCmd)
 	FoilCmd.AddCommand(vrfCmd)
-	//FoilCmd.AddCommand(oprfCmd)
+	FoilCmd.AddCommand(oprfCmd)
 
 	// Suppress Cobra internal error reporting in favor of Foil errors
 	FoilCmd.SilenceErrors = true
@@ -41,7 +41,7 @@ var (
 		Long: "Foil is a CLI crypto-playground. It was lovingly built to test out" +
 			"\nnew and exciting cryptograpic mechanisms for those without too" +
 			"\nmuch cryptographic background. Foil attempts to minimize the" +
-			"\nnumber of paths toward using its crypto in a *bad* way.",
+			"\nnumber of ways one can use foil crypto in a \"bad\" way.",
 	}
 )
 

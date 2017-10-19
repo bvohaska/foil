@@ -12,9 +12,9 @@ import (
 func init() {
 
 	// Add rsa specific flags
-	rsaCmd.PersistentFlags().IntVarP(&sizeRSA, "size", "", 0, "Generate an RSA private key of length [SIZE] bits")
-	rsaCmd.PersistentFlags().BoolVarP(&rsaGen, "gen", "", false, "Generate an RSA private key")
-	rsaCmd.PersistentFlags().BoolVarP(&rsaExtract, "pub", "", false, "Extract an RSA public key from an RSA private key PEM")
+	rsaCmd.PersistentFlags().IntVarP(&sizeRSA, "size", "", 0, "generate an RSA private key of length [size] bits")
+	rsaCmd.PersistentFlags().BoolVarP(&rsaGen, "gen", "", false, "generate an RSA private key")
+	rsaCmd.PersistentFlags().BoolVarP(&rsaExtract, "pub", "", false, "extract an RSA public key from an RSA private key PEM")
 }
 
 var (
@@ -24,8 +24,8 @@ var (
 
 	rsaCmd = &cobra.Command{
 		Use:               "rsa [OUT]",
-		Short:             "Generate an RSA private key or Extract a public key",
-		Long:              `Generate an RSA private key with key size [SIZE] or Extract the public key from a private PEM`,
+		Short:             "Generate an RSA private key or extract a public key",
+		Long:              `Generate an RSA private key with key size [size] or Extract the public key from a private PEM`,
 		PersistentPreRunE: rsaPreChecks,
 		RunE:              doRSA,
 	}

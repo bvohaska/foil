@@ -32,11 +32,19 @@ go/
 
 ```
 
-Ensure that you have access to the "golang.org/x/crypto/pbkdf2" package. The 'go get' will fetch this for you if your $GOPATH is correctly set-up.
+Ensure that you have access to the "golang.org/x/crypto/pbkdf2" package.
+
+If your go environnment is not set up to automatically fetch new golang.org packages, you can install pbkdf2 the 'go get' command. This will fetch packages for you if your $GOPATH points to your current go workspace:
+
+```bash
+
+$: go get golang.org/x/crypto/pbkdf2
+
+```
 
 Install Cobra:  <https://github.com/spf13/cobra>
 
-Typically this can be done using hte following command:
+Typically, this can be done using the following command:
 
 ```bash
 
@@ -64,7 +72,7 @@ $: go build
 
 Which will build a copy of encryptorCore and save the binary to the $PWD
 
-## Using the encryption tool
+## Using foil
 
 Locate the binary that was just built. Enter the following on the first try,
 
@@ -74,7 +82,23 @@ $: ./foil --help
 
 ```
 
-For encryption, simply follow the usuage instructions to supply an input and specify an output and the tool will encrypt; notice that you do not need to provide a key if you would like for a 256-bit key to be randomly generated for you. Example,
+Alternatively, consider adding your local go/bin to your path,
+
+```bash
+
+$: echo "[path to local go workspace]\go\bin" >> .profile
+
+```
+
+This will allow you to access foil by simply typing 'foil' in your terminal if you built foil using 'go install'
+
+### Using foil for Encryption & Decryption
+
+For encryption, simply follow the usuage instructions to supply an input and specify an output and the tool will encrypt; notice that you do not need to provide a key if you would like for a 256-bit key to be randomly generated for you. 
+
+Note: foil saves the AES IV (nonce) in the first 12 bytes of output
+
+Example,
 
 ```bash
 
