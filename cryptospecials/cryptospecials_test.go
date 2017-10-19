@@ -29,7 +29,21 @@ func TestHash2Curve(t *testing.T) {
 }
 
 /*
-*  This test does not garantee the cryptogrpahic viability of rsaVRF.generate() or ecc OPRF
-*  instead it checks the consistancy of the Mask, Salt, and Unmaks logic with EACH OTHER.
-*  Further testing and validation of the cryptography is required.append
+ * This test only test logical viability; crypto testing still required
  */
+func TestEccVrf(t *testing.T) {
+
+	var (
+		alpha  []byte
+		eccVrf ECCVRF
+		err    error
+	)
+
+	alpha = []byte("I am ecc VRF input")
+	ec := elliptic.P256()
+
+	eccVrf.EccProof, eccVrf.Beta, err = eccVrf.Generate(alpha, sha256.New(), ec, false)
+	if err != nil {
+		t.Errorf("FAIL - %v", err)
+	}
+}
