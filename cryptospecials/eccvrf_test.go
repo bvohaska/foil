@@ -1,6 +1,7 @@
 package cryptospecials
 
 import (
+	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/sha256"
 	"fmt"
@@ -17,22 +18,26 @@ func TestEccVrf(t *testing.T) {
 		verbose bool
 		alpha   []byte
 
-		pubK   ECCPoint
-		eccVrf ECCVRF
-		err    error
+		privKey *ecdsa.PrivateKey
+		pubK    ECCPoint
+		eccVrf  ECCVRF
+		err     error
 	)
 
 	verbose = true
 	alpha = []byte("I am ecc VRF input")
 	ec := elliptic.P256()
 
-	pubK, eccVrf.EccProof, eccVrf.Beta, err = eccVrf.Generate(sha256.New(), ec, alpha, verbose)
+	// Loading the file and serializing is by far the most expoensive operation here
+	privKey, err = EccPrivKeyLoad("ecPriv.pem")
+
+	eccVrf.EccProof, eccVrf.Beta, err = eccVrf.Generate(sha256.New(), ec, privKey, alpha, verbose)
 	if err != nil {
 		t.Errorf("FAIL - %v", err)
 	}
 
 	fmt.Println("********** Start Validation **********")
-	valid, err = eccVrf.Verify(sha256.New(), &pubK, ec, alpha, eccVrf.Beta, &eccVrf.EccProof, verbose)
+	valid, err = eccVrf.Verify(sha256.New(), &privKey.PublicKey, ec, alpha, eccVrf.Beta, &eccVrf.EccProof, verbose)
 	if err != nil {
 		t.Errorf("FAIL - %v", err)
 	}
@@ -40,5 +45,7 @@ func TestEccVrf(t *testing.T) {
 		t.Errorf("FAIL - Validity falure")
 	}
 	_ = pubK
+
+	//fmt.Println(eccVrf.EccProof.x)
 	//t.Errorf("Test")
 }
