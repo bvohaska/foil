@@ -29,6 +29,7 @@ import (
 	alpha       []byte
 */
 
+// Check to make sure the required PEM files are in the current testing directory
 func rsaFileCheck() error {
 
 	var (
@@ -64,7 +65,7 @@ func rsaFileCheck() error {
 *  the functions and not necessarily the security. Vetting of these functions is
 *  required.
  */
-func TestVrfGenVer(t *testing.T) {
+func TestRsaVrfGenVer(t *testing.T) {
 
 	var (
 		validity bool
@@ -73,20 +74,29 @@ func TestVrfGenVer(t *testing.T) {
 		err      error
 	)
 
-	Verbose = false
+	Verbose = true
 	pathPriv = "testPrivKey.pem"
 	pathPub = "testPubKey.pem"
 
+	/*
+	*  NOTE: These values are for proofString and betaString generated with a
+	*  SPECIFIC pem. Change proofString and betaString if using another.
+	*
+	* 	These variables are global to Commands package
+	 */
 	alphaString = "LegitString"
-	proofString = "b054a99aed22af4fe5d43c1e76883f2120da7fe9e3be25e7ffbfcb7b51d067df" +
-		"5e95c97b7e0b8f90b1826f45ac8718bd15815954aa264314beef47e2c0cc11c99ed0d9b180be094" +
-		"8d81b0ef9f9f15536caf1ce8d3088726c961f084fc465e392a8b6eca872a270fb01a063384a56a1" +
-		"3132ddc82acd1ba9b9b119661fc34ea015de8277f98b7d6c5ba516af9f30213a627d8b2367e4d8b" +
-		"88aa18d830802ba1c986c35dc14d09cbb6592e4649a90fe30a5b8fb5c9b8388bf6a2d5c93c3daa8" +
-		"c50e6a4431b580a3db74a2b1fbe57443da22013ce6f59ba0cdd4bf69cc8c8b53c05e50cc083042e" +
-		"8a2736ba01193ec0b7e9df5c66329f42f77ac3ddd309a28c970a0"
-	betaString = "47345fb1df669c4e4a147aa3c15ca0e9253cf00eecd1ec16107310bdb6d2205a"
+	proofString = "8506a33f87e68efb8dc490cf3ad89ef1ba8465085afe89024708ed9c42a95c4" +
+		"64682727a4f956323146e6a2cfc42935fb42e1e51c11121c5cadb1c1a6fb76" +
+		"3dd0757ba6eaef5808451933da5bba4928a94c80f1776197f40622f795eaf0" +
+		"c2772cbf69d5d17748642e92068dd7406800efe885e63aea08f4e8d5777a10" +
+		"c7f5c35357ba80bc455fc6f1c482462905ae557c7fa59e0e28da20ccbf7122" +
+		"20215662e19d09b8af16d1cdc2c259989c2997893b40e888b8c6c6c22ce58f" +
+		"d7ed0635ee1d5d587fd78c1b75dff20916e637f63bf8da11a5fb2d1aad7766" +
+		"ccd3077f4170111aacbf5fdd1f27059294e66cf77ce7ef88306ea00f0b1c94" +
+		"4abacbbb2eee0e1"
+	betaString = "5feabe59598852cce72ef186261196378bacc571975f8d26e6f91106cae2e02b"
 
+	// genRsa takes in alphaString, pathPriv, Verbose
 	proof, beta, err = genRsaVrf()
 	if err != nil {
 		t.Errorf("FAIL - %v", err)
@@ -107,10 +117,40 @@ func TestVrfGenVer(t *testing.T) {
 	}
 }
 
-func TestVrfGen(t *testing.T) {
+func TestECCVrfGenVer(t *testing.T) {
 
-}
+	var (
+		valid  bool
+		err    error
+		eccVrf *cryptospecials.ECCVRF
+	)
 
-func TestVrfVer(t *testing.T) {
+	eccVrf = new(cryptospecials.ECCVRF)
+	Verbose = true
+	//Verbose = false
+	pathPriv = "testECpriv.pem"
+	alphaString = "LegitString"
 
+	// ProofString will change as k changes
+	/*proofString = "bcccb418f210cb3e9942b3b8ef7cb177bae3a63b38318706c99c672380ef51f9" +
+		", 4f1cf2628dc0b25ecbcb50520464f2b77a3c63c14c317113985bf6f765cf306d" +
+		", 134a343ec74913a4e78df2d603adc810de1720c7b581bda56d718fd9ff541370" +
+		", a51c43578982d71011cbcd1a8f0aee5ad1b917129c7d5748cb5dda63c1e3505d"
+	betaString = "3cda8d5a1f5bd9078b52124356520e52a90beeab2bde290da9cab1ff41c36ee0"*/
+
+	err = genEccVrf(eccVrf)
+	if err != nil {
+		t.Errorf("FAIL - EC-VRF Failure: %v", err)
+	}
+	proofString = fmt.Sprintf("%x, %x, %x, %x", eccVrf.EccProof.X, eccVrf.EccProof.Y, eccVrf.EccProof.C, eccVrf.EccProof.S)
+	betaString = fmt.Sprintf("%x", eccVrf.Beta)
+
+	pathPub = "testECpub.pem"
+	valid, err = verEccVrf(eccVrf)
+	if err != nil {
+		t.Errorf("FAIL - EC-VRF Failure: %v", err)
+	}
+	if valid == false {
+		t.Errorf("FAIL - VRF verification failure")
+	}
 }

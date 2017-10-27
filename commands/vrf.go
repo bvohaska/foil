@@ -1,11 +1,15 @@
 package commands
 
 import (
+	"crypto/ecdsa"
+	"crypto/elliptic"
 	"crypto/rsa"
+	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"fmt"
 	"foil/cryptospecials"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -21,7 +25,6 @@ func init() {
 	// Add Gen/Ver specific flags
 	vrfGenCmd.PersistentFlags().StringVarP(&pathPriv, "priv", "", "", "specify path to private key")
 	vrfVerCmd.PersistentFlags().StringVarP(&pathPub, "pub", "", "", "specify path to pub key")
-
 	// Add VRF generate and verify as sub commands of vrf
 	vrfCmd.AddCommand(vrfGenCmd)
 	vrfCmd.AddCommand(vrfVerCmd)
@@ -41,13 +44,10 @@ var (
 		Short:             "Perform a VRF action",
 		Long:              `Foil can perform RSA and ECC VRF operations defined in: https://eprint.iacr.org/2017/099.pdf.`,
 		PersistentPreRunE: vrfPreChecks,
-		/*Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("This is a temporary placeholder")
-		},*/
 	}
 
 	vrfGenCmd = &cobra.Command{
-		Use:     "gen [TYPE] [PRIV PEM]",
+		Use:     "gen [--rsa/ecc] [private PEM]",
 		Short:   "Generate a VRF proof and data",
 		Long:    `Generate a VRF proof and data; [TYPE] is ECC or RSA. PEM file must be unencrypted.`,
 		PreRunE: vrfGenChecks,
@@ -55,7 +55,7 @@ var (
 	}
 
 	vrfVerCmd = &cobra.Command{
-		Use:     "verify [TYPE] [PUB PEM]",
+		Use:     "verify [--rsa/ecc] [public PEM]",
 		Short:   "Verify an RSA-VRF proof and data",
 		Long:    `Verify a VRF proof and data; [TYPE] is ECC or RSA.`,
 		PreRunE: vrfVerChecks,
@@ -78,6 +78,7 @@ func vrfPreChecks(cmd *cobra.Command, args []string) error {
 	if typeRSA == false && typeECC == false {
 		return errors.New("Error: Specify the type of VRF to be used: RSA or ECC")
 	}
+
 	if pathPriv == "" && pathPub == "" {
 		return errors.New("Error: Specify an input PEM (--priv or --pub [path to file])")
 	}
@@ -108,12 +109,13 @@ func vrfVerChecks(cmd *cobra.Command, args []string) error {
 	if proofString == "" {
 		return errors.New("Error: Specify VRF proof (hex)")
 	}
+	if len(proofString) < 64 && typeECC == true {
+		return errors.New("Error: Specify VRF proof - (x, y, c, s) - as ([hex], [hex], [hex], [hex])")
+	}
 	return nil
 }
 
-/*
-*
- */
+//Using user input, choose which type of VRF output to generate
 func doGenVRF(cmd *cobra.Command, args []string) error {
 
 	var (
@@ -127,24 +129,32 @@ func doGenVRF(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return err
 		}
-		fmt.Printf("VRF Proof (hex): %x\n", proof)
-		fmt.Printf("VRF Beta - H(Proof) (hex): %x\n", beta)
+		fmt.Printf("RSA-VRF Proof           (hex): %x\n", proof)
+		fmt.Printf("RSA-VRF Beta - H(Proof) (hex): %x\n", beta)
 	} else if typeECC {
-		err = genEccVrf()
+		eccVrf := cryptospecials.ECCVRF{}
+		err = genEccVrf(&eccVrf)
 		if err != nil {
 			return err
 		}
+		fmt.Printf("EC-VRF Proof - x, y, c, s (hex): %x, %x, %x, %x\n", eccVrf.EccProof.X, eccVrf.EccProof.Y, eccVrf.EccProof.C, eccVrf.EccProof.S)
+		fmt.Printf("EC-VRF Beta H(Proof) (hex): %x\n", eccVrf.Beta)
 	}
 
 	return nil
 }
 
+// Using user input, choose which type of VRF input to verify
 func doVerVRF(cmd *cobra.Command, args []string) error {
 
 	var (
 		validVRF bool
 		err      error
 	)
+
+	if betaString == "" {
+		return errors.New("Error: Specify beta H(proof)")
+	}
 
 	if typeRSA {
 		validVRF, err = verRsaVrf()
@@ -161,9 +171,16 @@ func doVerVRF(cmd *cobra.Command, args []string) error {
 			fmt.Printf("VRF Proof & Beta are NOT valid\n")
 		}
 	} else if typeECC {
-		err = verEccVrf()
+		var eccVrf *cryptospecials.ECCVRF
+		eccVrf = new(cryptospecials.ECCVRF)
+		validVRF, err = verEccVrf(eccVrf)
 		if err != nil {
-			return err
+			return fmt.Errorf("Error: Specify VRF proof (x, y, c, s) as \"[hex], [hex], [hex], [hex]\"; %v", err)
+		}
+		if validVRF {
+			fmt.Printf("VRF Proof & Beta are valid\n")
+		} else {
+			fmt.Printf("VRF Proof & Beta are NOT valid\n")
 		}
 	}
 
@@ -173,7 +190,7 @@ func doVerVRF(cmd *cobra.Command, args []string) error {
 /*
 *  Perform boilerplate operation needed to generate a VRF output given:
 *  (1) an alpha (might be shared only with the generator and verifier),
-*  (2) RSA private key
+*  (2) RSA private key (PEM format)
  */
 func genRsaVrf() ([]byte, []byte, error) {
 
@@ -200,10 +217,34 @@ func genRsaVrf() ([]byte, []byte, error) {
 	return vrfData.Proof, vrfData.Beta, nil
 }
 
-func genEccVrf() error {
+/*
+* NOTE: Currently only supporting P-256
+*  Perform boilerplate operation needed to generate a VRF output given:
+*  (1) an alpha (might be shared only with the generator and verifier),
+*  (2) EC private key (ECDSA PEM format)
+ */
+func genEccVrf(eccVrf *cryptospecials.ECCVRF) error {
 
-	fmt.Println("This is a temporary placeholder")
+	var (
+		ec      elliptic.Curve
+		privKey *ecdsa.PrivateKey
+		err     error
+	)
+	// Define the elliptic curve to be P-256
+	ec = elliptic.P256()
 
+	// Load a private key
+	privKey, err = cryptospecials.EccPrivKeyLoad(pathPriv)
+	if err != nil {
+		return err
+	}
+	eccVrf.EccProof, eccVrf.Beta, err = eccVrf.Generate(sha256.New(), ec, privKey, []byte(alphaString), Verbose)
+	if err != nil {
+		return err
+	}
+	if Verbose {
+		fmt.Println("EC-VRF Proof: ", eccVrf.EccProof)
+	}
 	return nil
 }
 
@@ -212,7 +253,7 @@ func genEccVrf() error {
 *  (1) an alpha (might be shared only with the generator and verifier),
 *  (2) beta (public)
 *  (3) proof (public)
-*  (4) RSA public key of the generator
+*  (4) RSA public key of the generator (PEM format)
  */
 func verRsaVrf() (bool, error) {
 
@@ -250,9 +291,58 @@ func verRsaVrf() (bool, error) {
 	return validVRF, nil
 }
 
-func verEccVrf() error {
+/*
+* NOTE: Currently only supporting P-256
+*  Perform boilerplate operation needed to verify a VRF output given:
+*  (1) an alpha (might be shared only with the generator and verifier),
+*  (2) beta (public)
+*  (3) proof (public)
+*  (4) EC public key (ECDSA PEM format)
+ */
+func verEccVrf(eccVrf *cryptospecials.ECCVRF) (bool, error) {
 
-	fmt.Println("This is a temporary placeholder")
+	var (
+		valid  bool
+		swap   []byte
+		ec     elliptic.Curve
+		pubKey *ecdsa.PublicKey
+		err    error
+	)
 
-	return nil
+	// Define the elliptic curve to be P-256
+	ec = elliptic.P256()
+	// Load the public key
+	pubKey, err = cryptospecials.EccPubKeyLoad(pathPub)
+	if err != nil {
+		return false, err
+	}
+
+	/*
+	* Parse VRF Proof string "[hex], [hex], [hex], [hex]"
+	*    (1) Split comma seperated input string
+	*    (2) Remove whitespace from resulting strings
+	*	 (3) Decode the hex string into bytes
+	*	 (4) Set the big.Int bytes as hex bytes
+	 */
+	splitString := strings.Split(proofString, ",")
+	if Verbose {
+		fmt.Println("SplitString: ", splitString)
+	}
+	swap, _ = hex.DecodeString(strings.Replace(splitString[0], " ", "", -1))
+	eccVrf.EccProof.X.SetBytes(swap)
+	swap, _ = hex.DecodeString(strings.Replace(splitString[1], " ", "", -1))
+	eccVrf.EccProof.Y.SetBytes(swap)
+	swap, _ = hex.DecodeString(strings.Replace(splitString[2], " ", "", -1))
+	eccVrf.EccProof.C.SetBytes(swap)
+	swap, _ = hex.DecodeString(strings.Replace(splitString[3], " ", "", -1))
+	eccVrf.EccProof.S.SetBytes(swap)
+
+	eccVrf.Beta, _ = hex.DecodeString(betaString)
+
+	valid, err = eccVrf.Verify(sha256.New(), pubKey, ec, []byte(alphaString), eccVrf.Beta, &eccVrf.EccProof, Verbose)
+	if err != nil {
+		return false, err
+	}
+
+	return valid, nil
 }

@@ -25,6 +25,7 @@ func TestEccVrf(t *testing.T) {
 	)
 
 	verbose = true
+	//verbose = false
 	alpha = []byte("I am ecc VRF input")
 	ec := elliptic.P256()
 
@@ -32,6 +33,9 @@ func TestEccVrf(t *testing.T) {
 	privKey, err = EccPrivKeyLoad("ecPriv.pem")
 
 	eccVrf.EccProof, eccVrf.Beta, err = eccVrf.Generate(sha256.New(), ec, privKey, alpha, verbose)
+	if verbose {
+		fmt.Println("EC-VRF Proof: ", eccVrf.EccProof)
+	}
 	if err != nil {
 		t.Errorf("FAIL - %v", err)
 	}
@@ -47,5 +51,5 @@ func TestEccVrf(t *testing.T) {
 	_ = pubK
 
 	//fmt.Println(eccVrf.EccProof.x)
-	//t.Errorf("Test")
+	//	t.Errorf("Test")
 }

@@ -3,7 +3,6 @@ package commands
 import (
 	"crypto/rsa"
 	"errors"
-	"fmt"
 	"foil/cryptospecials"
 
 	"github.com/spf13/cobra"
@@ -13,7 +12,7 @@ func init() {
 
 	// Add rsa specific flags
 	rsaCmd.PersistentFlags().IntVarP(&sizeRSA, "size", "", 0, "generate an RSA private key of length [size] bits")
-	rsaCmd.PersistentFlags().BoolVarP(&rsaGen, "gen", "", false, "generate an RSA private key")
+	rsaCmd.PersistentFlags().BoolVarP(&rsaGen, "gen", "", false, "generate an RSA private key with --size [int]")
 	rsaCmd.PersistentFlags().BoolVarP(&rsaExtract, "pub", "", false, "extract an RSA public key from an RSA private key PEM")
 }
 
@@ -23,7 +22,7 @@ var (
 	sizeRSA    int
 
 	rsaCmd = &cobra.Command{
-		Use:               "rsa [OUT]",
+		Use:               "rsagen [--in PATH] [--text/out PATH] [operation]",
 		Short:             "Generate an RSA private key or extract a public key",
 		Long:              `Generate an RSA private key with key size [size] or Extract the public key from a private PEM`,
 		PersistentPreRunE: rsaPreChecks,
@@ -36,8 +35,10 @@ var (
 *  that there are no flags set that would lead to logical faults.
  */
 func rsaPreChecks(cmd *cobra.Command, args []string) error {
-	if len(args) > 0 {
-		return fmt.Errorf("Error: Unknown arguments: %v", args)
+
+	//Check to make sure an action is selected
+	if rsaGen == false && rsaExtract == false {
+		return errors.New("Error: Must specify an action --gen/--pub")
 	}
 	// Check to make sure the appropriate flags are set
 	if stdOutBool == false && len(outputPath) == 0 {
@@ -46,11 +47,6 @@ func rsaPreChecks(cmd *cobra.Command, args []string) error {
 		return errors.New("Error: Must specify an input file")
 	} else if rsaGen == true && sizeRSA == 0 {
 		return errors.New("Error: Must specify a key size")
-	}
-
-	// Check to make sure the appropriate flags are set
-	if stdOutBool == false && len(outputPath) == 0 {
-		return errors.New("Error: Must specify an output method")
 	}
 
 	// RSA will not take StdIn as source input
