@@ -20,6 +20,7 @@ func init() {
 	// Add dynamic commands
 	FoilCmd.AddCommand(aesCmd)
 	FoilCmd.AddCommand(rsaCmd)
+	FoilCmd.AddCommand(ecCmd)
 	FoilCmd.AddCommand(vrfCmd)
 	FoilCmd.AddCommand(oprfCmd)
 
