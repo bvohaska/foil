@@ -14,9 +14,9 @@ Foil uses the Cobra package to display CLI usage and help. For more information 
 
 ## Proposed Features
 
-- [] Curve25519 support
-- [] VRF standard input/output files
-- [] NSEC5 generation/ validation support
+Curve25519 support
+VRF standard input/output files
+NSEC5 generation/ validation support
 
 ## Getting Started
 
@@ -130,9 +130,9 @@ $: ./foil aes dec --textin [hex of ciphertext] --textout --password "LegitPa$$wo
 
 ```
 
-### Using other foil features
+### Using foil for other features
 
-Other features are much more involed. For documentation, see the Documentation folder.
+Other features are much more involed. For documentation, see the Documentation folder
 
 ## Contributors
 
