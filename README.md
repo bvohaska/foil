@@ -14,9 +14,9 @@ Foil uses the Cobra package to display CLI usage and help. For more information 
 
 ## Proposed Features
 
-Curve25519 support
-VRF standard input/output files
-NSEC5 generation/ validation support
+ * Curve25519 support
+ * VRF standard input/output files
+ * NSEC5 generation/ validation support
 
 ## Getting Started
 
