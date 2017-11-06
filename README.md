@@ -1,8 +1,22 @@
 # Foil: A simple CLI *cryption tool & much more
 
-Foil provides a simple UI to provide a crypto-playground to the user. In tis way, foil was desinged to allow users to experiment with cryptography while also providing useful  AES-256-GCM encryption and decryption with a 96-bit IV/nonce.
+Foil is a CLI tool that provides easy access to new and exciting cryptograhic primitives. In tis way, foil was desinged to allow users to experiment with cryptography while also providing more common features such as AES-256-GCM for encryption and decryption.
 
 Foil uses the Cobra package to display CLI usage and help. For more information on Cobra, see: <https://github.com/spf13/cobra>.
+
+## Current Features
+
+* AES-256-GCM w/ 96-bit nonce
+* ECDSA generation
+* RSA generation
+* EC-OPRF based on <https://eprint.iacr.org/2017/111>
+* VRFs based on <https://eprint.iacr.org/2017/099.pdf>
+
+## Proposed Features
+
+- [ ] Curve25519 support
+- [ ] VRF standard input/output files
+- [ ] NSEC5 generation/ validation support
 
 ## Getting Started
 
@@ -115,6 +129,10 @@ For decryption, you must supply a key (hex) or password in addition to an input 
 $: ./foil aes dec --textin [hex of ciphertext] --textout --password "LegitPa$$word1999" --adata "I love encryption"
 
 ```
+
+### Using other foil features
+
+Other features are much more involed. For documentation, see the Documentation folder.
 
 ## Contributors
 

@@ -104,8 +104,8 @@ func genECDSA() error {
 	}
 
 	// Save the ECDSA private and public key as as files and/or print to stdin
-	if inputPath != "" {
-		err = cryptospecials.EccKeySave(privKey, inputPath, inputPath+".pub")
+	if outputPath != "" {
+		err = cryptospecials.EccKeySave(privKey, outputPath, inputPath+".pub")
 		if err != nil {
 			return err
 		}
