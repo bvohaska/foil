@@ -1,138 +1,86 @@
-# Foil: A simple CLI *cryption tool & much more
+# RSA Key Generation
 
-Foil is a CLI tool that provides easy access to new and exciting cryptograhic primitives. In tis way, foil was desinged to allow users to experiment with cryptography while also providing more common features such as AES-256-GCM for encryption and decryption.
+Foil can create ECDSA private and public keys. By default, both the public and private keys are created and saved whenever ECDSA generation is called. 
 
-Foil uses the Cobra package to display CLI usage and help. For more information on Cobra, see: <https://github.com/spf13/cobra>.
-
-## Current Features
-
-* AES-256-GCM w/ 96-bit nonce
-* ECDSA generation
-* RSA generation
-* EC-OPRF based on <https://eprint.iacr.org/2017/111>
-* VRFs based on <https://eprint.iacr.org/2017/099.pdf>
-
-## Proposed Features
-
-Curve25519 support
-VRF standard input/output files
-NSEC5 generation/ validation support
-
-## Getting Started
-
-In order to get started you will need to install golang, and set up your go workspace, and download the requisite libraries.
-
-### Prerequisites
-
-Install golang <https://golang.org/doc/install>.
-
-Set up your go environment ($GOROOT and $GOPATH); See the above link for more details. On linux go is typically installed in /user/local with a $GOPATH set to ~/go.
-
-Git clone this repository. Make sure the directory structure is appropriate for your environment. Example:
-
-```go
-
-go/
-    src/
-        foil/
-            main.go
-            helpers/
-                helpers.go
-            commands/
-                ...
-    pkg/
-
-    bin/
-
-```
-
-Ensure that you have access to the "golang.org/x/crypto/pbkdf2" package.
-
-If your go environnment is not set up to automatically fetch new golang.org packages, you can install pbkdf2 the 'go get' command. This will fetch packages for you if your $GOPATH points to your current go workspace:
+## Usage
 
 ```bash
 
-$: go get golang.org/x/crypto/pbkdf2
+$: foil rsagen [operation] [path to input file] [path to output file] [flags]
 
 ```
 
-Install Cobra:  <https://github.com/spf13/cobra>
+### Available Flags
 
-Typically, this can be done using the following command:
+`--gen` - Generate a new RSA public and private key in PEM format
+`--pub` - Given a private key in PEM format, extract and save the public key in PEM format
+`--size` - Create an RSA key of size [int]; [int] must be 2048, 3072, 4096
+
+### Examples
+
+Generate a private key,
 
 ```bash
 
-$: go get -u github.com/spf13/cobra/cobra
+$: foil rsagen --gen --size 2048 --out testPriv.pem
+
+$: ls
+
+  testPriv.pem
 
 ```
 
-### Building for the first time
-
-To build the encryptor there are two options:
+Print private key to StdOut
 
 ```bash
 
-$: go install
+$: foil rsagen --gen --size 2048 --textout
+
+-----BEGIN EXAMPLE RSA PRIVATE KEY-----
+MIIEpAIBAAKCAQEAlkzBFk8h2DNyhVBq7/KHqsbTo3DHl4JPCq4snULTmeI7NFiC
+A0aE6X3q414wdbu3lWpRP0XR+fDHqP99Xq7WrLk+mylT9NYjqda+YGQQ5ul7ghdD
+nzLFpHcW2hu7lWQBn1qw85NqRyVG6Q6qZhVSOYp8U1RkWTuvMjkxbgBIIX8kNUQ7
+Fzo/BHBfW7/UUoiGv5QON6YaRD8e5U9R72i3g4mVu1kr7Af4sW+vV+BUiVhIRyY3
+QfmiUpCybhelLuXgha20IsxAI2W8AnJESZ4G1OVUIqAUAUMfSIg/Y1qn4gJGSHU8
+qW/hjQLk1SDKKNmbBKXHVVgYfPemhYHITS2+XQIDAQABAoIBAECSYTIwdR3pnH3h
++s9zpw2btjk1rspM1aCFC+3UVAx8wWrPy6uUlG2sB0n/oVozd7/dmWJRoNB8vYrB
+mR8ghmJWg6stqkA578B73faThx9tl/5f+FFhAsCR2WODHqgj+v53fCZpYvOF9F0U
+S+jnqBfIg3lZfHNJzQ8Ku03DGToqONsSuth8BC9pPR1VWdPmakzHl6eVOkBHiI5v
+Y1jFp3LoyfvWMXkW8+YqjTtNHS3oo4ytKUMJZ9hr1knFSacTFsNzzIjX0Rwc7Bvk
+DpzTNX3/rnNxBicY6B9dXcdzxz0fSGbKXAQIgR+Umk19oojOUU0hfBKX8anNjOcY
+zXI1bxECgYEAwsav5NDzYySTLvUgtiVyRStq7YNtr2m0+J6ArIJdhLRpCTGr2s80
+WJI+8oS2WZWPSJzW444i1YzvAX/REy0tBXsRRSMVhUTrJ58P3Q/Cj1fvMqQtmzb4
+LZoXmhomcHsE0eL4CkAyJSfBKRLRzHxU0dkJs2SAu31Yv8Ff4faS5Z8CgYEAxYsh
++d5YWJ/qKv6xhzKmLxMIwWzbVTylfcMUdUWvAGWVLPR0R1X+mrqlDO2xH1R5J+ng
+Rn+yxMEWoOnznkvMcRN2NcjwbfMeKhx2teuJ6CXPpgeiksGlQUD+JXEyC9ME0t0e
+B9Z9AdKjcHThRBkbsnsyFphRx0CVIUcUurRpAoMCgYEAk5uDPULk0COtrw5xpdgn
+CyhmNm09uIvBbBCirxl0ydb3KtKLzJzurJjYP243yxg+p+bEK1tSJshRcK9uwLuh
+vN+RLPXznzWliDdRDFSfO4aGbbhiH5i+58A5Vr2ul9uCwZTiKNKRrfq8teXfPLqU
+hRuX8G2f6XaKxXdEtLfqhz0CgYEAmNPRD0yTMM1XDrhIg/4NT3H8Xhhnf4QRzD/2
+PdwRTc9JH6RnqSDAfthTBLOHSmPB770ig6gbl9iCNy+ICDlAC2MxGt9AEu/5sD6h
+IJD++hj2ks5pWfxyaw9rD3CJdVhl7PSgXRP1VkmtpDzoYhTCtsxUreJdsjcmqL4j
+LWaRrx0CgYBb2EFZjZbOYwgCU++xgGuC5CGGllNIO/D3WoORfLawAQIarPOPK5tM
+sL/U0tgTD5sxAKhX+ZoM4fPibuWD3bYeFRL37U6Z4yxbVts7iCIwtv/KuGAL71No
+D9x7IOSNP18dS037UF9Elok4ig4ks6sNSONSeIL5Jr78pvOViqM9Fg==
+-----END EXAMPLE RSA PRIVATE KEY-----
 
 ```
 
-Which will build a copy of encryptorCore and save the binary in $GOPATH/bin
+Extract a public key,
 
 ```bash
 
-$: go build
+$: foil rsagen --pub --out testPub.pem --in testPriv.pem
+
+$: ls
+
+  testPriv.pem  testPub.pem
 
 ```
 
-Which will build a copy of encryptorCore and save the binary to the $PWD
+## Additional Details
 
-## Using foil
-
-Locate the binary that was just built. Enter the following on the first try,
-
-```bash
-
-$: ./foil --help
-
-```
-
-Alternatively, consider adding your local go/bin to your path,
-
-```bash
-
-$: echo "[path to local go workspace]\go\bin" >> .profile
-
-```
-
-This will allow you to access foil by simply typing 'foil' in your terminal if you built foil using 'go install'
-
-### Using foil for Encryption & Decryption
-
-For encryption, simply follow the usuage instructions to supply an input and specify an output and the tool will encrypt; notice that you do not need to provide a key if you would like for a 256-bit key to be randomly generated for you. 
-
-Note: foil saves the AES IV (nonce) in the first 12 bytes of output
-
-Example,
-
-```bash
-
-$: ./foil aes enc --textin "Attack at dawn!" --textout --password "LegitPa$$word1999" --adata "I love encryption"
-
-```
-
-Note: If a password (string) or key (in hex) is not provided, the encryption function will randomly genereate one using os random.
-
-For decryption, you must supply a key (hex) or password in addition to an input file and output destination. Example,
-
-```bash
-
-$: ./foil aes dec --textin [hex of ciphertext] --textout --password "LegitPa$$word1999" --adata "I love encryption"
-
-```
-
-### Using foil for other features
-
-Other features are much more involed. For documentation, see the Documentation folder
+RSA prime search and testing is not performed with constant time algorithms.
 
 ## Contributors
 

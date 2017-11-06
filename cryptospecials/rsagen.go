@@ -95,7 +95,7 @@ func RSAKeySave(privKey *rsa.PrivateKey, savePubKey bool, printStdIn bool, dest 
 		fmt.Println("No destination provided. Saving file as: ./IAMArsaKey.pem")
 		*dest = "IAMArsaKey.pem"
 	} else if *dest == "" && printStdIn == true {
-		fmt.Println(pemBytes)
+		fmt.Printf("%s\n", pemBytes)
 	}
 	// Write the PEM to file
 	if len(*dest) > 0 {

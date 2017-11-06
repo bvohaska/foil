@@ -6,7 +6,7 @@ Foil can create ECDSA private and public keys. By default, both the public and p
 
 ```bash
 
-$: foil ecgen [path to output file] [operation] [fags]
+$: foil ecgen [operation] [path to output file] [flags]
 
 ```
 
@@ -21,11 +21,11 @@ Generate a private key,
 
 ```bash
 
-$: foil --gen --out testOut.pem
+$: foil ecgen --gen --out testPriv.pem
 
 $: ls
 
-  testout.pem
+  testPriv.pem
 
 ```
 
@@ -33,7 +33,7 @@ Print private key to StdOut
 
 ```bash
 
-$: foil --gen --out testPriv.pem --textout
+$: foil ecgen --gen --out testPriv.pem --textout
 
 -----BEGIN EXAMPLE PRIVATE KEY-----
 MHcCAQEEIMoiNS9ehBTGmuWyDkkOPNGKg8XjxqD6opY3PrexThPnoAoGCCqGSM49
@@ -52,7 +52,7 @@ Extract a public key,
 
 ```bash
 
-$: foil --pub --out testPub.pem --in testPriv.pem
+$: foil ecgen --pub --out testPub.pem --in testPriv.pem
 
 $: ls
 
