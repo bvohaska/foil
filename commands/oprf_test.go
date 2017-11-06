@@ -56,10 +56,11 @@ func TestOprf(t *testing.T) {
 	// Parameters that need to be abstracted away if supporting more curves
 	ec = elliptic.P256()
 	h = sha256.New()
+	stdInString = "LegitTest"
 
 	//mask = true
 	// ****************************Perform masking operation*******************************
-	xm, ym, rInv, err = elem.Mask(oprfData, h, ec, Verbose)
+	xm, ym, rInv, err = elem.Mask(stdInString, h, ec, Verbose)
 	if err != nil {
 		t.Errorf("FAIL - %v", err)
 	}

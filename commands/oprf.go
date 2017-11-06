@@ -18,7 +18,6 @@ func init() {
 	oprfCmd.PersistentFlags().BoolVarP(&mask, "mask", "", false, "mask a string using the ECC-OPRF")
 	oprfCmd.PersistentFlags().BoolVarP(&salt, "salt", "", false, "salt a masked value using the ECC-OPRF")
 	oprfCmd.PersistentFlags().BoolVarP(&unmask, "unmask", "", false, "unmask a salted value using the ECC-OPRF")
-	oprfCmd.PersistentFlags().StringVarP(&oprfData, "indata", "", "", "use [string] as ECC-OPRF input (w_i)")
 	//oprfCmd.PersistentFlags().BoolVarP(&curveP256, "p256", "", false, "use P-256 as the elliptic curve for ECC-OPRF")
 	//oprfCmd.PersistentFlags().BoolVarP(&curveP384, "p384", "", false, "use P-384 as the elliptic curve for ECC-OPRF")
 	//oprfCmd.PersistentFlags().BoolVarP(&curveP521, "p521", "", false, "use P-521 as the elliptic curve for ECC-OPRF")
@@ -33,7 +32,6 @@ var (
 	mask       bool
 	salt       bool
 	unmask     bool
-	oprfData   string
 	xString    string
 	yString    string
 	saltString string
@@ -60,7 +58,7 @@ func oprfPreCheck(cmd *cobra.Command, args []string) error {
 		return errors.New("Error: specify only one OPRF operation")
 	}
 	// Ensure initial OPRF input is provided
-	if mask == true && oprfData == "" {
+	if mask == true && stdInString == "" {
 		return errors.New("Error: specify OPRF input")
 	}
 	// If salting or unmasking, ensure an elliptic curve point (x,y) is provided
@@ -91,18 +89,21 @@ func oprfPreCheck(cmd *cobra.Command, args []string) error {
 func doOprf(cmd *cobra.Command, args []string) error {
 
 	var (
-		x, y           *big.Int
-		rInv, s, sOut  *big.Int
-		xBytes, yBytes []byte
-		err            error
-		elem           cryptospecials.OPRF
-		ec             elliptic.Curve
-		h              hash.Hash
+		x, y                 *big.Int
+		rInv, s, sOut        *big.Int
+		xBytes, yBytes, swap []byte
+		err                  error
+		elem                 cryptospecials.OPRF
+		ec                   elliptic.Curve
+		h                    hash.Hash
 	)
 
 	// Fill (x,y) with zero values
 	x = new(big.Int)
 	y = new(big.Int)
+	// Sill salts with zero values
+	sOut = new(big.Int)
+	rInv = new(big.Int)
 	// Parameters that need to be abstracted away if supporting more curves
 	ec = elliptic.P256()
 	h = sha256.New()
@@ -124,9 +125,9 @@ func doOprf(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// Perform OPRF operations
+	// Perform OPRF Masking
 	if mask {
-		x, y, rInv, err = elem.Mask(oprfData, h, ec, Verbose)
+		x, y, rInv, err = elem.Mask(stdInString, h, ec, Verbose)
 		if err != nil {
 			return err
 		}
@@ -134,23 +135,42 @@ func doOprf(cmd *cobra.Command, args []string) error {
 		fmt.Printf("Masked x-coordinate (hex): %x\n", x)
 		fmt.Printf("Masked y-coordinate (hex): %x\n", y)
 		fmt.Printf("SECRET - r inverse  (hex): %x\n", rInv)
+	}
+	// Perform OPRF Salting
+	if salt {
 
-	} else if salt {
+		if saltString != "" {
+
+			swap, err = hex.DecodeString(saltString)
+			if err != nil {
+				return err
+			}
+
+			s = new(big.Int).SetBytes(swap)
+		}
+
 		x, y, sOut, err = elem.Salt(x, y, s, ec, Verbose)
 		if err != nil {
-			return err
+			return fmt.Errorf("OPRF Salting failed: %v", err)
 		}
 		// Check to determine if s == sOut
-		if s.Sub(s, sOut) != new(big.Int).SetUint64(uint64(0)) {
+		if saltString == "" {
 			fmt.Printf("SECRET - new s generated (hex): %x\n", sOut)
 			fmt.Printf("SECRET - s given (hex)        : %x\n", s)
 		}
 
 		fmt.Printf("Salted x-coordinate (hex): %x\n", x)
 		fmt.Printf("Salted y-coordinate (hex): %x\n", y)
-
-	} else if unmask {
+	}
+	// Perform OPRF unmasking
+	if unmask {
 		// This does not check to ensure that rInv < N and warn the user if true
+		swap, err = hex.DecodeString(rInvString)
+		if err != nil {
+			return fmt.Errorf("OPRF Unmaksing failed: %v", err)
+		}
+		rInv = new(big.Int).SetBytes(swap)
+
 		x, y, err = elem.Unmask(x, y, rInv, ec, Verbose)
 		if err != nil {
 			return err
