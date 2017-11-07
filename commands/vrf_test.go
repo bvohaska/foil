@@ -75,8 +75,6 @@ func TestRsaVrfGenVer(t *testing.T) {
 	)
 
 	Verbose = true
-	pathPriv = "testPrivKey.pem"
-	pathPub = "testPubKey.pem"
 
 	/*
 	*  NOTE: These values are for proofString and betaString generated with a
@@ -97,6 +95,7 @@ func TestRsaVrfGenVer(t *testing.T) {
 	betaString = "5feabe59598852cce72ef186261196378bacc571975f8d26e6f91106cae2e02b"
 
 	// genRsa takes in alphaString, pathPriv, Verbose
+	inputPath = "testPrivKey.pem"
 	proof, beta, err = genRsaVrf()
 	if err != nil {
 		t.Errorf("FAIL - %v", err)
@@ -108,6 +107,7 @@ func TestRsaVrfGenVer(t *testing.T) {
 		t.Errorf("FAIL - Beta generation failure")
 	}
 
+	inputPath = "testPubKey.pem"
 	validity, err = verRsaVrf()
 	if err != nil {
 		t.Errorf("FAIL - %v", err)
@@ -128,7 +128,6 @@ func TestECCVrfGenVer(t *testing.T) {
 	eccVrf = new(cryptospecials.ECCVRF)
 	Verbose = true
 	//Verbose = false
-	pathPriv = "testECpriv.pem"
 	alphaString = "LegitString"
 
 	// ProofString will change as k changes
@@ -138,6 +137,7 @@ func TestECCVrfGenVer(t *testing.T) {
 		", a51c43578982d71011cbcd1a8f0aee5ad1b917129c7d5748cb5dda63c1e3505d"
 	betaString = "3cda8d5a1f5bd9078b52124356520e52a90beeab2bde290da9cab1ff41c36ee0"*/
 
+	inputPath = "testECpriv.pem"
 	err = genEccVrf(eccVrf)
 	if err != nil {
 		t.Errorf("FAIL - EC-VRF Failure: %v", err)
@@ -145,7 +145,7 @@ func TestECCVrfGenVer(t *testing.T) {
 	proofString = fmt.Sprintf("%x, %x, %x, %x", eccVrf.EccProof.X, eccVrf.EccProof.Y, eccVrf.EccProof.C, eccVrf.EccProof.S)
 	betaString = fmt.Sprintf("%x", eccVrf.Beta)
 
-	pathPub = "testECpub.pem"
+	inputPath = "testECpub.pem"
 	valid, err = verEccVrf(eccVrf)
 	if err != nil {
 		t.Errorf("FAIL - EC-VRF Failure: %v", err)

@@ -1,6 +1,6 @@
 # RSA Key Generation
 
-Foil can create ECDSA private and public keys. By default, both the public and private keys are created and saved whenever ECDSA generation is called. 
+Foil can create ECDSA private and public keys. By default, both the public and private keys are created and saved whenever ECDSA generation is called
 
 ## Usage
 
@@ -82,7 +82,7 @@ $: ls
 
 ## Additional Details
 
-RSA prime search and testing is not performed with constant time algorithms.
+RSA prime search and testing is not performed with constant time algorithms
 
 ## Contributors
 
