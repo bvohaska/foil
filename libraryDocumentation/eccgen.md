@@ -16,31 +16,31 @@ None
 
 ### Available Functions
 
-`EccPrivKeyGen` - Generates a random elliptic curve secret and public key for an elliptic curve
+* `EccPrivKeyGen` - Generates a random elliptic curve secret and public key for an elliptic curve
 
-`EccKeySave` - Saves the private and public key as an ECDSA PEM file
+* `EccKeySave` - Saves the private and public key as an ECDSA PEM file
 
-`EccPrivKeyLoad` - Load a private key from an ECDSA private PEM file
+* `EccPrivKeyLoad` - Load a private key from an ECDSA private PEM file
 
-`EccPubKeyLoad` - Load a public key from an ECDSA public PEM file
+* `EccPubKeyLoad` - Load a public key from an ECDSA public PEM file
 
 ## Function Descriptions
 
 ### `EccPrivKeyGen(ec elliptic.Curve) (privKey *ecdsa.PrivateKey, err error)`
 
-#### Input
+* #### Input
 
   `ec` - an elliptic curve (typically P-256)
 
-#### Output
+* #### Output
 
-  `privKey` - an elliptic curve private key-on the curve `ec`; the public key is contained within the PrivateKey structure
+  `privKey` - an elliptic curve private key on the curve `ec`; the public key is contained within the PrivateKey structure
 
   `err` - a standard formatted error
 
 ### `EccKeySave(privKey *ecdsa.PrivateKey, savePriv string, savePub string) (err error)`
 
-#### Input
+* #### Input
 
   `privKey` - an elliptic curve private key in ECDSA structure format
 
@@ -48,17 +48,17 @@ None
 
   `savePub` - the file path where the public key will be saved
 
-#### Output
+* #### Output
 
   `err` - a standard formatted error
 
 ### `EccPrivKeyLoad(sourcePath string) (privKey *ecdsa.PrivateKey, err error)`
 
-#### Input
+* #### Input
 
   `sourcePath` - the file path to the ECDSA private PEM file
 
-#### Output
+* #### Output
 
   `privKey` - an elliptic curve private key in ECDSA structure format
 
@@ -66,11 +66,11 @@ None
 
 ### `EccPubKeyLoad(sourcePath string) (pubKey *ecdsa.PublicKey, err error)`
 
-#### Input
+* #### Input
 
   `sourcePath` - the file path to the ECDSA public PEM file
 
-#### Output
+* #### Output
 
   `privKey` - an elliptic curve private key in ECDSA structure format
 

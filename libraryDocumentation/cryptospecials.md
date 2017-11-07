@@ -24,25 +24,25 @@ The following fuinctions, structures, or variables are available,
 
 ### Available Variables
 
-`blank` - A big.Int initialized with zeros but not equal to the integer zero
+* `blank` - A big.Int initialized with zeros but not equal to the integer zero
 
-`zero` - big.Int integer zero
+* `zero` - big.Int integer zero
 
-`one` - bit.Ing integer one
+* `one` - bit.Ing integer one
 
 ### Available Structures
 
-`ECPoint` - A struct containing 2 big.Ints x and y representing an elliptic curve point
+* `ECPoint` - A struct containing 2 big.Ints x and y representing an elliptic curve point
 
 ### Available Functions
 
-`Hash2curve` - Hashes an integer `x` into an elliptic curve via the try-and-increment method
+* `Hash2curve` - Hashes an integer `x` into an elliptic curve via the try-and-increment method
 
-`hashThree` - A variadic function that performs the H_3 hash from <https://eprint.iacr.org/2017/099.pdf>
+* `hashThree` - A variadic function that performs the H_3 hash from <https://eprint.iacr.org/2017/099.pdf>
 
-`mgf1XOR` - A version of MGF1 taken from the golang core
+* `mgf1XOR` - A version of MGF1 taken from the golang core
 
-`incCounter` - A support function for `mgf1xor`
+* `incCounter` - A support function for `mgf1xor`
 
 ## Function Descriptions
 
@@ -50,7 +50,7 @@ The following fuinctions, structures, or variables are available,
 
 This fuction attempts to hash `data` into the elliptic curve defined by `ec` via the try-and-increment method. While robust, this method is not constant-time nor is there a guarantee that the method will work within a reasonable time.
 
-### Input
+* ### Input
 
   `data` - information to be hashed into the elliptic curve
 
@@ -60,7 +60,7 @@ This fuction attempts to hash `data` into the elliptic curve defined by `ec` via
 
   `verbose` - trigger verbose output
 
-### Output
+* ### Output
 
   `pt` - an elliptic curve point (x,y)
 
