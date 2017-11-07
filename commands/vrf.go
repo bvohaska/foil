@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"foil/cryptospecials"
+	"math/big"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -22,9 +23,7 @@ func init() {
 	vrfCmd.PersistentFlags().StringVarP(&alphaString, "alpha", "", "", "use [string] as VRF input")
 	vrfCmd.PersistentFlags().StringVarP(&betaString, "beta", "", "", "use [string] as H(proof) - Beta")
 	vrfCmd.PersistentFlags().StringVarP(&proofString, "proof", "", "", "use [hex] as VRF proof for validation")
-	// Add Gen/Ver specific flags
-	vrfGenCmd.PersistentFlags().StringVarP(&pathPriv, "priv", "", "", "specify path to private key")
-	vrfVerCmd.PersistentFlags().StringVarP(&pathPub, "pub", "", "", "specify path to pub key")
+
 	// Add VRF generate and verify as sub commands of vrf
 	vrfCmd.AddCommand(vrfGenCmd)
 	vrfCmd.AddCommand(vrfVerCmd)
@@ -33,8 +32,6 @@ func init() {
 var (
 	typeRSA     bool
 	typeECC     bool
-	pathPriv    string
-	pathPub     string
 	alphaString string
 	betaString  string
 	proofString string
@@ -47,7 +44,7 @@ var (
 	}
 
 	vrfGenCmd = &cobra.Command{
-		Use:     "gen [--rsa/ecc] [private PEM]",
+		Use:     "gen [--rsa/ecc] [--in private PEM]",
 		Short:   "Generate a VRF proof and data",
 		Long:    `Generate a VRF proof and data; [TYPE] is ECC or RSA. PEM file must be unencrypted.`,
 		PreRunE: vrfGenChecks,
@@ -55,7 +52,7 @@ var (
 	}
 
 	vrfVerCmd = &cobra.Command{
-		Use:     "verify [--rsa/ecc] [public PEM]",
+		Use:     "ver [--rsa/ecc] [--in public PEM]",
 		Short:   "Verify an RSA-VRF proof and data",
 		Long:    `Verify a VRF proof and data; [TYPE] is ECC or RSA.`,
 		PreRunE: vrfVerChecks,
@@ -79,8 +76,8 @@ func vrfPreChecks(cmd *cobra.Command, args []string) error {
 		return errors.New("Error: Specify the type of VRF to be used: RSA or ECC")
 	}
 
-	if pathPriv == "" && pathPub == "" {
-		return errors.New("Error: Specify an input PEM (--priv or --pub [path to file])")
+	if inputPath == "" {
+		return errors.New("Error: Specify an input PEM (--in [path to file])")
 	}
 
 	return nil
@@ -91,7 +88,7 @@ func vrfGenChecks(cmd *cobra.Command, args []string) error {
 
 	// Ensure that alpha is provided
 	if alphaString == "" {
-		return errors.New("Error: Specify VRF input (alpha)")
+		return errors.New("Error: Specify alpha (VRF input)")
 	}
 	return nil
 }
@@ -101,16 +98,16 @@ func vrfVerChecks(cmd *cobra.Command, args []string) error {
 
 	// Ensure that alpha, beta, proof are provided
 	if alphaString == "" {
-		return errors.New("Error: Specify VRF input (alpha) (hex))")
+		return errors.New("Error: Specify alpha (VRF input)")
 	}
 	if betaString == "" {
-		return errors.New("Error: Specify hash of VRF proof (hex)")
+		return errors.New("Error: Specify beta (hash of VRF proof) (hex)")
 	}
 	if proofString == "" {
 		return errors.New("Error: Specify VRF proof (hex)")
 	}
 	if len(proofString) < 64 && typeECC == true {
-		return errors.New("Error: Specify VRF proof - (x, y, c, s) - as ([hex], [hex], [hex], [hex])")
+		return errors.New("Error: Specify VRF proof - (x, y, c, s) - as \"[hex], [hex], [hex], [hex]\"")
 	}
 	return nil
 }
@@ -175,7 +172,7 @@ func doVerVRF(cmd *cobra.Command, args []string) error {
 		eccVrf = new(cryptospecials.ECCVRF)
 		validVRF, err = verEccVrf(eccVrf)
 		if err != nil {
-			return fmt.Errorf("Error: Specify VRF proof (x, y, c, s) as \"[hex], [hex], [hex], [hex]\"; %v", err)
+			return fmt.Errorf("Error: %v; Have you specified the VRF proof (x, y, c, s) as \"[hex], [hex], [hex], [hex]\"?", err)
 		}
 		if validVRF {
 			fmt.Printf("VRF Proof & Beta are valid\n")
@@ -202,7 +199,7 @@ func genRsaVrf() ([]byte, []byte, error) {
 	vrfData.Alpha = []byte(alphaString)
 
 	// Load an RSA private key from file; store in RSAVRF struct
-	vrfData.PrivateKey, err = cryptospecials.RSAPrivKeyLoad(&pathPriv, Verbose)
+	vrfData.PrivateKey, err = cryptospecials.RSAPrivKeyLoad(&inputPath, Verbose)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -234,7 +231,7 @@ func genEccVrf(eccVrf *cryptospecials.ECCVRF) error {
 	ec = elliptic.P256()
 
 	// Load a private key
-	privKey, err = cryptospecials.EccPrivKeyLoad(pathPriv)
+	privKey, err = cryptospecials.EccPrivKeyLoad(inputPath)
 	if err != nil {
 		return err
 	}
@@ -276,7 +273,7 @@ func verRsaVrf() (bool, error) {
 	}
 
 	// Load an RSA public key from file
-	pubKey, err = cryptospecials.RSAPubKeyLoad(&pathPub, Verbose)
+	pubKey, err = cryptospecials.RSAPubKeyLoad(&inputPath, Verbose)
 	if err != nil {
 		return false, err
 	}
@@ -303,7 +300,6 @@ func verEccVrf(eccVrf *cryptospecials.ECCVRF) (bool, error) {
 
 	var (
 		valid  bool
-		swap   []byte
 		ec     elliptic.Curve
 		pubKey *ecdsa.PublicKey
 		err    error
@@ -312,7 +308,7 @@ func verEccVrf(eccVrf *cryptospecials.ECCVRF) (bool, error) {
 	// Define the elliptic curve to be P-256
 	ec = elliptic.P256()
 	// Load the public key
-	pubKey, err = cryptospecials.EccPubKeyLoad(pathPub)
+	pubKey, err = cryptospecials.EccPubKeyLoad(inputPath)
 	if err != nil {
 		return false, err
 	}
@@ -324,25 +320,66 @@ func verEccVrf(eccVrf *cryptospecials.ECCVRF) (bool, error) {
 	*	 (3) Decode the hex string into bytes
 	*	 (4) Set the big.Int bytes as hex bytes
 	 */
-	splitString := strings.Split(proofString, ",")
-	if Verbose {
-		fmt.Println("SplitString: ", splitString)
+	err = uglyStringParse(eccVrf, proofString)
+	if err != nil {
+		return false, err
 	}
-	swap, _ = hex.DecodeString(strings.Replace(splitString[0], " ", "", -1))
-	eccVrf.EccProof.X.SetBytes(swap)
-	swap, _ = hex.DecodeString(strings.Replace(splitString[1], " ", "", -1))
-	eccVrf.EccProof.Y.SetBytes(swap)
-	swap, _ = hex.DecodeString(strings.Replace(splitString[2], " ", "", -1))
-	eccVrf.EccProof.C.SetBytes(swap)
-	swap, _ = hex.DecodeString(strings.Replace(splitString[3], " ", "", -1))
-	eccVrf.EccProof.S.SetBytes(swap)
-
-	eccVrf.Beta, _ = hex.DecodeString(betaString)
-
 	valid, err = eccVrf.Verify(sha256.New(), pubKey, ec, []byte(alphaString), eccVrf.Beta, &eccVrf.EccProof, Verbose)
 	if err != nil {
 		return false, err
 	}
 
 	return valid, nil
+}
+
+func uglyStringParse(eccVrf *cryptospecials.ECCVRF, rawData string) (err error) {
+
+	var (
+		swap        []byte
+		splitString []string
+	)
+
+	splitString = strings.Split(proofString, ",")
+	if Verbose {
+		fmt.Println("SplitString: ", splitString)
+	}
+	swap, err = hex.DecodeString(strings.Replace(splitString[0], " ", "", -1))
+	if err != nil {
+		return err
+	}
+	if Verbose {
+		fmt.Println(strings.Replace(splitString[0], " ", "", -1))
+	}
+	eccVrf.EccProof.X = new(big.Int).SetBytes(swap)
+	swap, err = hex.DecodeString(strings.Replace(splitString[1], " ", "", -1))
+	if err != nil {
+		return err
+	}
+	if Verbose {
+		fmt.Println(strings.Replace(splitString[1], " ", "", -1))
+	}
+	eccVrf.EccProof.Y = new(big.Int).SetBytes(swap)
+	swap, err = hex.DecodeString(strings.Replace(splitString[2], " ", "", -1))
+	if err != nil {
+		return err
+	}
+	if Verbose {
+		fmt.Println(strings.Replace(splitString[2], " ", "", -1))
+	}
+	eccVrf.EccProof.C = new(big.Int).SetBytes(swap)
+	swap, err = hex.DecodeString(strings.Replace(splitString[3], " ", "", -1))
+	if err != nil {
+		return err
+	}
+	if Verbose {
+		fmt.Println(strings.Replace(splitString[3], " ", "", -1))
+	}
+	eccVrf.EccProof.S = new(big.Int).SetBytes(swap)
+
+	eccVrf.Beta, err = hex.DecodeString(betaString)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

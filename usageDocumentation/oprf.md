@@ -1,6 +1,6 @@
 # RSA Key Generation
 
-Foil can generate interactive OPRF responses based on <https://eprint.iacr.org/2017/111>.
+Foil can generate interactive OPRF responses based on <https://eprint.iacr.org/2017/111>
 
 ## Usage
 
@@ -12,7 +12,7 @@ $: foil oprf [operation] [path to input] [flags]
 
 ### Available Flags
 
-`--mask` - Step (1) in the OPRF protocol. Hash a message into the curve and mask with a secret value `s`.
+`--mask` - Step (1) in the OPRF protocol. Hash a message into the curve and mask with a secret value `s`
 
 `--salt` - Step (2) in the OPRF protocol. Given a private key in PEM format, extract and save the public key in PEM format
 
@@ -79,7 +79,7 @@ $: foil oprf --unmask \
 
 ## Additional Details
 
-There is a proposal for the EC-OPRF to use ECDSA keys stored in a PEM file instead of user supplied random `s`.
+There is a proposal for the EC-OPRF to use ECDSA keys stored in a PEM file instead of user supplied random `s`
 
 ## Contributors
 

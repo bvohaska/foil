@@ -332,7 +332,7 @@ func (rep ECCVRF) Verify(h hash.Hash, pubK *ecdsa.PublicKey, ec elliptic.Curve, 
 
 	// Validate Proof.c = Calculated c
 	if bytes.Compare(eccProof.C.Bytes(), swapByte) != 0 {
-		return false, fmt.Errorf("Validation Error: Proof element c - provided_c does not equal calculated_c")
+		return false, nil
 	}
 
 	// *** Final Step ***

@@ -72,23 +72,23 @@ func (vrf RSAVRF) Generate(alpha []byte, rsaPrivKey *rsa.PrivateKey, verbose boo
 	beta = hash256.Sum(nil) //Outputs in big-endian
 
 	if verbose {
-		fmt.Printf("****VRF.generate - Verbose Output****\n")
+		fmt.Printf("\n\n****RSAVRF.generate****\n\n")
 
-		fmt.Println("RSA Pub Mod - N (big Int):", rsaPrivKey.N)
-		fmt.Println("RSA Pub Exp - E (int):", rsaPrivKey.E)
-		fmt.Println("SECRET - RSA Priv Exp - D (big Int):", rsaPrivKey.D)
+		fmt.Printf("RSA Pub Mod - N (big Int):\n\n%v\n\n", rsaPrivKey.N)
+		fmt.Printf("RSA Pub Exp - E (int):\n\n%v\n\n", rsaPrivKey.E)
+		fmt.Printf("SECRET - RSA Priv Exp - D (big Int):\n\n%v\n\n", rsaPrivKey.D)
 
-		fmt.Printf("Alpha (string): %s\n", alpha)
-		fmt.Printf("Alpha (hex): %x\n", alpha)
+		fmt.Printf("Alpha (string): \n\n%s\n\n", alpha)
+		fmt.Printf("Alpha (hex): \n\n%x\n\n", alpha)
 
-		fmt.Println("Proof (big Int):", proof)
-		fmt.Printf("Proof (hex): %x\n", proof.Bytes())
-		fmt.Printf("H(proof) (hex): %x\n", hash256.Sum(nil))
-		fmt.Printf("Beta = H(proof) (hex): %x\n", beta)
+		fmt.Printf("Proof (big Int):\n\n%v\n\n", proof)
+		fmt.Printf("Proof (hex): \n\n%x\n\n", proof.Bytes())
+		fmt.Printf("H(proof) (hex): \n\n%x\n\n", hash256.Sum(nil))
+		fmt.Printf("Beta = H(proof) (hex): \n\n%x\n\n", beta)
 
-		fmt.Printf("Length of MGF1 output (Should be < len(N)): %d", len(output))
-		fmt.Printf("MGF1 Output (hex): %x\n", output)
-		fmt.Println("MGF1 Output as big.Int:", outInt)
+		fmt.Printf("Length of MGF1 output (Should be < len(N)): \n\n%d\n\n", len(output))
+		fmt.Printf("MGF1 Output (hex): \n\n%x\n\n", output)
+		fmt.Printf("MGF1 Output as big.Int: \n\n%v\n\n", outInt)
 	}
 
 	return proof.Bytes(), beta, nil

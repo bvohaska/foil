@@ -85,8 +85,9 @@ func RSAKeySave(privKey *rsa.PrivateKey, savePubKey bool, printStdIn bool, dest 
 			},
 		)
 		if verbose {
-			fmt.Println("SECRET - Der Bytes:", derBytes)
-			fmt.Println("SECRET - Pem Bytes:", pemBytes)
+			fmt.Printf("\n\n******RSAKeySave******\n\n")
+			fmt.Printf("SECRET - Der Bytes:\n\n%x\n\n", derBytes)
+			fmt.Printf("SECRET - Pem Bytes:\n\n%x\n\n", pemBytes)
 		}
 	}
 
@@ -132,9 +133,10 @@ func RSAPrivKeyLoad(source *string, verbose bool) (*rsa.PrivateKey, error) {
 		return nil, fmt.Errorf("Error: %v", err)
 	}
 	if verbose {
-		fmt.Println("SECRET - rawPem:", rawPem)
-		fmt.Println("SECRET - pemData:", pemData)
-		fmt.Println("SECRET - privKey:", privKey)
+		fmt.Printf("\n\n******RSAPrivKeyLoad******\n\n")
+		fmt.Printf("SECRET - rawPem: \n\n%s\n\n", rawPem)
+		fmt.Printf("SECRET - pemData: \n\n%x\n\n", pemData)
+		fmt.Printf("SECRET - privKey: \n\n%v\n\n", privKey)
 	}
 	return privKey, nil
 }
@@ -161,9 +163,10 @@ func RSAPubKeyLoad(source *string, verbose bool) (*rsa.PublicKey, error) {
 		return nil, fmt.Errorf("Error: %v", err)
 	}
 	if verbose {
-		fmt.Println("rawPem:", rawPem)
-		fmt.Println("pemData:", pemData)
-		fmt.Println("pubKey:", pubKey)
+		fmt.Printf("\n\n******RSAPrivKeyLoad Verbose Output******\n\n")
+		fmt.Printf("Input PEM: \n\n%s\n", rawPem)
+		fmt.Printf("Raw PEM Data: \n\n%x\n\n", pemData)
+		fmt.Printf("pubKey: \n\n%s\n\n", pubKey)
 	}
 	// Extract the pub key and ensure it is of type RSA
 	switch pubKey := pubKey.(type) {

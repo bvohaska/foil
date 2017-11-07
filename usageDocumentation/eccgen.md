@@ -1,6 +1,6 @@
 # ECDSA Generation
 
-Foil can create ECDSA private and public keys. By default, both the public and private keys are created and saved whenever ECDSA generation is called. 
+Foil can create ECDSA private and public keys. By default, both the public and private keys are created and saved whenever ECDSA generation is called
 
 ## Usage
 
@@ -62,7 +62,7 @@ $: ls
 
 ## Additional Details
 
-ECDSA keys are generated on P-256 and saved as PEM files. New curves will eventually be supported.
+ECDSA keys are generated on P-256 and saved as PEM files. New curves will eventually be supported
 
 ## Contributors
 
