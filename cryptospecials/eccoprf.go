@@ -34,15 +34,14 @@ type OPRF struct {
 *	eq. (1) G_i = H(w_i)
 *	eq. (2) M_i = m_i * G_i
  */
-func (rep OPRF) Mask(data string, h hash.Hash, ec elliptic.Curve, verbose bool) (xMask *big.Int, yMask *big.Int, rInv *big.Int, err error) {
+func (rep OPRF) Mask(data string, h hash.Hash, ec elliptic.Curve, verbose bool) (mask ECPoint, rInv *big.Int, err error) {
 
 	var (
-		x       *big.Int
-		y       *big.Int
+		numRead int
 		r       *big.Int
 		rByte   []byte
 		hData   []byte
-		numRead int
+		pt      ECPoint
 	)
 
 	// Fill r, rInv with zeros (or Seg Fault when using r.SetBytes(...))
@@ -54,7 +53,7 @@ func (rep OPRF) Mask(data string, h hash.Hash, ec elliptic.Curve, verbose bool) 
 	rByte = make([]byte, (ec.Params().BitSize+8)/8-1)
 	numRead, err = rng.Read(rByte)
 	if err != nil {
-		return nil, nil, nil, err
+		return ECPoint{}, nil, err
 	}
 
 	/*
@@ -64,11 +63,11 @@ func (rep OPRF) Mask(data string, h hash.Hash, ec elliptic.Curve, verbose bool) 
 	 */
 	_, err = h.Write([]byte(data))
 	if err != nil {
-		return nil, nil, nil, err
+		return ECPoint{}, nil, err
 	}
 	hData = h.Sum(nil)
 	h.Reset()
-	x, y, err = Hash2curve(hData, h, ec.Params(), 1, verbose)
+	pt, err = Hash2curve(hData, h, ec.Params(), 1, verbose)
 
 	/*
 	*  Determine r (mod N) and rInv (mod N) such that r*rInv = 1 (mod N). N
@@ -77,25 +76,25 @@ func (rep OPRF) Mask(data string, h hash.Hash, ec elliptic.Curve, verbose bool) 
 	r.SetBytes(rByte)
 	r.Mod(r, ec.Params().N)
 	rInv.ModInverse(r, ec.Params().N)
-	xMask, yMask = ec.ScalarMult(x, y, r.Bytes())
-	if xMask == zero || yMask == zero {
-		return nil, nil, nil, errors.New("Error: The resulting point r*H(data) = (x1, y1) contains zeros")
+	mask.X, mask.Y = ec.ScalarMult(pt.X, pt.Y, r.Bytes())
+	if mask.X == zero || mask.Y == zero {
+		return ECPoint{}, nil, errors.New("Error: The resulting point r*H(data) = (x1, y1) contains zeros")
 	}
 
 	if verbose {
 		fmt.Println("Number of random bytes read:", numRead)
 		fmt.Println("Size of H(data)            :", len(hData))
-		fmt.Println("SECRET x-coordinate:", x)
-		fmt.Println("SECRET y-coordinate:", y)
+		fmt.Println("SECRET x-coordinate:", pt.X)
+		fmt.Println("SECRET y-coordinate:", pt.Y)
 		fmt.Println("SECRET r           :", r)
 		fmt.Println("SECRET r-inv       :", rInv)
-		fmt.Println("Masked x-coordinate:", xMask)
-		fmt.Println("Masked y-coordinate:", yMask)
-		fmt.Println("Is Masked (x,y) on the curve:", ec.IsOnCurve(xMask, yMask))
+		fmt.Println("Masked x-coordinate:", mask.X)
+		fmt.Println("Masked y-coordinate:", mask.Y)
+		fmt.Println("Is Masked (x,y) on the curve:", ec.IsOnCurve(mask.X, mask.Y))
 	}
 
 	// (x1,y1) = r*(x,y) : x, y <-- H(data) into ec
-	return xMask, yMask, rInv, nil
+	return mask, rInv, nil
 }
 
 //Salt is an exportable method
@@ -104,7 +103,7 @@ func (rep OPRF) Mask(data string, h hash.Hash, ec elliptic.Curve, verbose bool) 
 *  Sec. 3.1:
 *	eq. (3) S_i = s_i * M_i = s * (xMask, yMask) = s * r * (x, y)
  */
-func (rep OPRF) Salt(xMask *big.Int, yMask *big.Int, s *big.Int, ec elliptic.Curve, verbose bool) (xSalt *big.Int, ySalt *big.Int, sOut *big.Int, err error) {
+func (rep OPRF) Salt(mask ECPoint, s *big.Int, ec elliptic.Curve, verbose bool) (salt ECPoint, sOut *big.Int, err error) {
 
 	/*
 	*  Ensure s is not zero; if so, generate a random number and return as error. Note:
@@ -120,16 +119,16 @@ func (rep OPRF) Salt(xMask *big.Int, yMask *big.Int, s *big.Int, ec elliptic.Cur
 		fmt.Println("SECRET - s (new)  :", s)
 	}
 
-	xSalt, ySalt = ec.ScalarMult(xMask, yMask, s.Bytes())
+	salt.X, salt.Y = ec.ScalarMult(mask.X, mask.Y, s.Bytes())
 
 	if verbose {
 		fmt.Println("SECRET - s (used)  :", s)
-		fmt.Println("Salted x-coordinate:", xSalt)
-		fmt.Println("Salted y-coordinate:", ySalt)
-		fmt.Println("Is Salted (x, y) on the curve:", ec.IsOnCurve(xSalt, ySalt))
+		fmt.Println("Salted x-coordinate:", salt.X)
+		fmt.Println("Salted y-coordinate:", salt.Y)
+		fmt.Println("Is Salted (x, y) on the curve:", ec.IsOnCurve(salt.X, salt.Y))
 	}
 
-	return xSalt, ySalt, s, nil
+	return salt, s, nil
 }
 
 //Unmask is an exportable method
@@ -138,16 +137,16 @@ func (rep OPRF) Salt(xMask *big.Int, yMask *big.Int, s *big.Int, ec elliptic.Cur
 Sec. 3.1:
 *	eq. (4) U_i = r_inv * S_i = r_inv * s * (xMask, yMask) = r_inv * s * r * (x, y) = s * (x, y)
 */
-func (rep OPRF) Unmask(xSalt *big.Int, ySalt *big.Int, rInv *big.Int, ec elliptic.Curve, verbose bool) (xUnmask *big.Int, yUnmask *big.Int, err error) {
+func (rep OPRF) Unmask(salt ECPoint, rInv *big.Int, ec elliptic.Curve, verbose bool) (unmask ECPoint, err error) {
 
-	xUnmask, yUnmask = ec.ScalarMult(xSalt, ySalt, rInv.Bytes())
+	unmask.X, unmask.Y = ec.ScalarMult(salt.X, salt.Y, rInv.Bytes())
 
 	if verbose {
-		fmt.Println("Unmasked x-coordinate:", xUnmask)
-		fmt.Println("Unmasked y-coordinate:", yUnmask)
-		fmt.Println("Is Unmasked (x, y) on the curve:", ec.IsOnCurve(xUnmask, yUnmask))
+		fmt.Println("Unmasked x-coordinate:", unmask.X)
+		fmt.Println("Unmasked y-coordinate:", unmask.Y)
+		fmt.Println("Is Unmasked (x, y) on the curve:", ec.IsOnCurve(unmask.X, unmask.Y))
 	}
-	return xUnmask, yUnmask, nil
+	return unmask, nil
 }
 
 /*
@@ -155,7 +154,7 @@ func (rep OPRF) Unmask(xSalt *big.Int, ySalt *big.Int, rInv *big.Int, ec ellipti
 *  resulting in s_inv * s * U_i = s_inv * s * (x, y) = (x, y) = H(data). This operation is not
 *  in the OPRF paper.
  */
-func (rep OPRF) unsalt(xUnmask *big.Int, yUnmask *big.Int, s *big.Int, ec elliptic.Curve, verbose bool) (xUnsalt *big.Int, yUnsalt *big.Int, err error) {
+func (rep OPRF) unsalt(unmask ECPoint, s *big.Int, ec elliptic.Curve, verbose bool) (unsalt ECPoint, err error) {
 
 	var (
 		sInv *big.Int
@@ -165,11 +164,11 @@ func (rep OPRF) unsalt(xUnmask *big.Int, yUnmask *big.Int, s *big.Int, ec ellipt
 	sInv = new(big.Int)
 	sInv.ModInverse(s, ec.Params().N)
 
-	xUnsalt, yUnsalt = ec.ScalarMult(xUnmask, yUnmask, sInv.Bytes())
+	unsalt.X, unsalt.Y = ec.ScalarMult(unmask.X, unmask.Y, sInv.Bytes())
 
 	if verbose {
-		fmt.Println("Is unsalted (x, y) on the curve:", ec.IsOnCurve(xUnsalt, yUnsalt))
+		fmt.Println("Is unsalted (x, y) on the curve:", ec.IsOnCurve(unsalt.X, unsalt.Y))
 	}
 
-	return xUnsalt, yUnsalt, nil
+	return unsalt, nil
 }

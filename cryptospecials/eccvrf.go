@@ -64,11 +64,11 @@ func (rep ECCVRF) Generate(h hash.Hash, ec elliptic.Curve, privKey *ecdsa.Privat
 	 */
 
 	var (
-		k, s, c  *big.Int
-		xh1, yh1 *big.Int
-		xh2, yh2 *big.Int
-		xgk, ygk *big.Int
-		xhk, yhk *big.Int
+		k, s, c *big.Int
+		pth1    ECPoint
+		pth2    ECPoint
+		ptgk    ECPoint
+		pthk    ECPoint
 
 		swap []byte
 	)
@@ -76,10 +76,10 @@ func (rep ECCVRF) Generate(h hash.Hash, ec elliptic.Curve, privKey *ecdsa.Privat
 	// Set big.Ints to zero
 	k = new(big.Int)
 	s, c = new(big.Int), new(big.Int)
-	xh1, yh1 = new(big.Int), new(big.Int)
-	xh2, yh2 = new(big.Int), new(big.Int)
-	xgk, ygk = new(big.Int), new(big.Int)
-	xhk, yhk = new(big.Int), new(big.Int)
+	pth1.X, pth1.Y = new(big.Int), new(big.Int)
+	pth2.X, pth2.Y = new(big.Int), new(big.Int)
+	ptgk.X, ptgk.Y = new(big.Int), new(big.Int)
+	pthk.X, pthk.Y = new(big.Int), new(big.Int)
 
 	// *** Step (1) ***
 	/*
@@ -95,13 +95,13 @@ func (rep ECCVRF) Generate(h hash.Hash, ec elliptic.Curve, privKey *ecdsa.Privat
 	*			= x *(xh1, yh1)
 	*		    = (xh2, yh2)
 	 */
-	xh1, yh1, err = Hash2curve(alpha, h, ec.Params(), 1, verbose)
+	pth1, err = Hash2curve(alpha, h, ec.Params(), 1, verbose)
 	if err != nil {
 		return Proof{}, nil, err
 	}
-	xh2, yh2 = ec.ScalarMult(xh1, yh1, privKey.D.Bytes())
-	eccProof.X = xh2
-	eccProof.Y = yh2
+	pth2.X, pth2.Y = ec.ScalarMult(pth1.X, pth1.Y, privKey.D.Bytes())
+	eccProof.X = pth2.X
+	eccProof.Y = pth2.Y
 
 	// *** Step (2) ***
 	// Randomly choose: k (mod 1)
@@ -123,8 +123,8 @@ func (rep ECCVRF) Generate(h hash.Hash, ec elliptic.Curve, privKey *ecdsa.Privat
 	*			= k * (xh1, yh1)
 	*			= (xhk, yhk)
 	 */
-	xgk, ygk = ec.ScalarBaseMult(k.Bytes())
-	xhk, yhk = ec.ScalarMult(xh1, yh1, k.Bytes())
+	ptgk.X, ptgk.Y = ec.ScalarBaseMult(k.Bytes())
+	pthk.X, pthk.Y = ec.ScalarMult(pth1.X, pth1.Y, k.Bytes())
 
 	// *** Step (3) ***
 	/*
@@ -143,11 +143,11 @@ func (rep ECCVRF) Generate(h hash.Hash, ec elliptic.Curve, privKey *ecdsa.Privat
 	h.Reset()
 	swap = hashThree(h,
 		ec.Params().Gx.Bytes(), ec.Params().Gy.Bytes(),
-		xh1.Bytes(), yh1.Bytes(),
+		pth1.X.Bytes(), pth1.Y.Bytes(),
 		privKey.X.Bytes(), privKey.Y.Bytes(),
-		xh2.Bytes(), yh2.Bytes(),
-		xgk.Bytes(), ygk.Bytes(),
-		xhk.Bytes(), yhk.Bytes())
+		pth2.X.Bytes(), pth2.Y.Bytes(),
+		ptgk.X.Bytes(), ptgk.Y.Bytes(),
+		pthk.X.Bytes(), pthk.Y.Bytes())
 	c.SetBytes(swap)
 	c.Mod(c, ec.Params().N)
 	if verbose {
@@ -176,8 +176,8 @@ func (rep ECCVRF) Generate(h hash.Hash, ec elliptic.Curve, privKey *ecdsa.Privat
 	eccProof.C = c
 	eccProof.S = s
 	h.Reset()
-	h.Write(xh2.Bytes())
-	h.Write(yh2.Bytes())
+	h.Write(pth2.X.Bytes())
+	h.Write(pth2.Y.Bytes())
 	beta = h.Sum(nil)
 
 	if verbose {
@@ -189,23 +189,23 @@ func (rep ECCVRF) Generate(h hash.Hash, ec elliptic.Curve, privKey *ecdsa.Privat
 		fmt.Printf("Public - xGy    : %v\n", privKey.Y)
 		fmt.Printf("Public - s      : %v\n", s)
 		fmt.Printf("Public - c      : %v\n", c)
-		fmt.Printf("Public - h^x - x: %v\n", xh2)
-		fmt.Printf("Public - h^x - y: %v\n", yh2)
+		fmt.Printf("Public - h^x - x: %v\n", pth2.X)
+		fmt.Printf("Public - h^x - y: %v\n", pth2.Y)
 		fmt.Printf("Public - beta (hex): %x\n\n", beta)
 
 		fmt.Println("c - Inputs:")
 		fmt.Printf("  G - x     (hex): %x\n", ec.Params().Gx.Bytes())
 		fmt.Printf("  G - y     (hex): %x\n", ec.Params().Gy.Bytes())
-		fmt.Printf("  h1(a) - x (hex): %x\n", xh1.Bytes())
-		fmt.Printf("  h1(a) - y (hex): %x\n", yh1.Bytes())
+		fmt.Printf("  h1(a) - x (hex): %x\n", pth1.X.Bytes())
+		fmt.Printf("  h1(a) - y (hex): %x\n", pth1.Y.Bytes())
 		fmt.Printf("  PubK - x  (hex): %x\n", privKey.X.Bytes())
 		fmt.Printf("  PubK - y  (hex): %x\n", privKey.Y.Bytes())
-		fmt.Printf("  h2 - x    (hex): %x\n", xh2.Bytes())
-		fmt.Printf("  h2 - y    (hex): %x\n", yh2.Bytes())
-		fmt.Printf("  g^k - x   (hex): %x\n", xgk.Bytes())
-		fmt.Printf("  g^k - y   (hex): %x\n", ygk.Bytes())
-		fmt.Printf("  h^k - x   (hex): %x\n", xhk.Bytes())
-		fmt.Printf("  h^k - y   (hex): %x\n\n", yhk.Bytes())
+		fmt.Printf("  h2 - x    (hex): %x\n", pth2.X.Bytes())
+		fmt.Printf("  h2 - y    (hex): %x\n", pth2.Y.Bytes())
+		fmt.Printf("  g^k - x   (hex): %x\n", ptgk.X.Bytes())
+		fmt.Printf("  g^k - y   (hex): %x\n", ptgk.Y.Bytes())
+		fmt.Printf("  h^k - x   (hex): %x\n", pthk.X.Bytes())
+		fmt.Printf("  h^k - y   (hex): %x\n\n", pthk.Y.Bytes())
 
 	}
 
@@ -220,7 +220,7 @@ func (rep ECCVRF) Verify(h hash.Hash, pubK *ecdsa.PublicKey, ec elliptic.Curve, 
 
 	var (
 		swapByte       []byte
-		h1, u, v, swap ECCPoint
+		h1, u, v, swap ECPoint
 	)
 
 	// Set big.Ints to zero
@@ -234,9 +234,9 @@ func (rep ECCVRF) Verify(h hash.Hash, pubK *ecdsa.PublicKey, ec elliptic.Curve, 
 	*			= (c*x + k - c*x)*G
 	*			= k*G = G^k
 	 */
-	u.x, u.y = ec.ScalarMult(pubK.X, pubK.Y, eccProof.C.Bytes())
-	swap.x, swap.y = ec.ScalarBaseMult(eccProof.S.Bytes())
-	u.x, u.y = ec.Add(u.x, u.y, swap.x, swap.y)
+	u.X, u.Y = ec.ScalarMult(pubK.X, pubK.Y, eccProof.C.Bytes())
+	swap.X, swap.Y = ec.ScalarBaseMult(eccProof.S.Bytes())
+	u.X, u.Y = ec.Add(u.X, u.Y, swap.X, swap.Y)
 
 	// *** Step (2) ***
 	/*
@@ -260,13 +260,13 @@ func (rep ECCVRF) Verify(h hash.Hash, pubK *ecdsa.PublicKey, ec elliptic.Curve, 
 		return false, fmt.Errorf("Error: The lambda provided is not on the provided elliptic curve")
 	}
 	// Note: using sha256; this should be abstracted to other functions at some point
-	h1.x, h1.y, err = Hash2curve(alpha, sha256.New(), ec.Params(), 1, verbose)
+	h1, err = Hash2curve(alpha, sha256.New(), ec.Params(), 1, verbose)
 	if err != nil {
 		return false, err
 	}
-	v.x, v.y = ec.ScalarMult(eccProof.X, eccProof.Y, eccProof.C.Bytes())
-	swap.x, swap.y = ec.ScalarMult(h1.x, h1.y, eccProof.S.Bytes())
-	v.x, v.y = ec.Add(v.x, v.y, swap.x, swap.y)
+	v.X, v.Y = ec.ScalarMult(eccProof.X, eccProof.Y, eccProof.C.Bytes())
+	swap.X, swap.Y = ec.ScalarMult(h1.X, h1.Y, eccProof.S.Bytes())
+	v.X, v.Y = ec.Add(v.X, v.Y, swap.X, swap.Y)
 
 	// *** Step (3) ***
 	/*
@@ -290,11 +290,11 @@ func (rep ECCVRF) Verify(h hash.Hash, pubK *ecdsa.PublicKey, ec elliptic.Curve, 
 	h.Reset()
 	swapByte = hashThree(h,
 		ec.Params().Gx.Bytes(), ec.Params().Gy.Bytes(),
-		h1.x.Bytes(), h1.y.Bytes(),
+		h1.X.Bytes(), h1.Y.Bytes(),
 		pubK.X.Bytes(), pubK.Y.Bytes(),
 		eccProof.X.Bytes(), eccProof.Y.Bytes(),
-		u.x.Bytes(), u.y.Bytes(),
-		v.x.Bytes(), v.y.Bytes(),
+		u.X.Bytes(), u.Y.Bytes(),
+		v.X.Bytes(), v.Y.Bytes(),
 	)
 
 	if verbose {
@@ -306,27 +306,27 @@ func (rep ECCVRF) Verify(h hash.Hash, pubK *ecdsa.PublicKey, ec elliptic.Curve, 
 		fmt.Printf("  x             : %v\n", pubK.X)
 		fmt.Printf("  y             : %v\n", pubK.Y)
 		fmt.Println("u = (x, y)")
-		fmt.Printf("  x             : %v\n", u.x)
-		fmt.Printf("  y             : %v\n", u.y)
+		fmt.Printf("  x             : %v\n", u.X)
+		fmt.Printf("  y             : %v\n", u.Y)
 		fmt.Println("v = (x, y)")
-		fmt.Printf("  x             : %v\n", v.x)
-		fmt.Printf("  y             : %v\n\n", v.y)
+		fmt.Printf("  x             : %v\n", v.X)
+		fmt.Printf("  y             : %v\n\n", v.Y)
 
 		fmt.Printf("c - Provided   (hex): %x\n", eccProof.C.Bytes())
 		fmt.Printf("c - Calculated (hex): %x\n", swapByte)
 		fmt.Println("c - Calculated Inputs:")
 		fmt.Printf("  G - x     (hex): %x\n", ec.Params().Gx.Bytes())
 		fmt.Printf("  G - y     (hex): %x\n", ec.Params().Gy.Bytes())
-		fmt.Printf("  h1(a) - x (hex): %x\n", h1.x.Bytes())
-		fmt.Printf("  h1(a) - y (hex): %x\n", h1.y.Bytes())
+		fmt.Printf("  h1(a) - x (hex): %x\n", h1.X.Bytes())
+		fmt.Printf("  h1(a) - y (hex): %x\n", h1.Y.Bytes())
 		fmt.Printf("  PubK - x  (hex): %x\n", pubK.X.Bytes())
 		fmt.Printf("  PubK - y  (hex): %x\n", pubK.Y.Bytes())
 		fmt.Printf("  h2 - x    (hex): %x\n", eccProof.X.Bytes())
 		fmt.Printf("  h2 - y    (hex): %x\n", eccProof.Y.Bytes())
-		fmt.Printf("  u - x     (hex): %x\n", u.x.Bytes())
-		fmt.Printf("  u - y     (hex): %x\n", u.y.Bytes())
-		fmt.Printf("  v - x     (hex): %x\n", v.x.Bytes())
-		fmt.Printf("  v - y     (hex): %x\n\n", v.y.Bytes())
+		fmt.Printf("  u - x     (hex): %x\n", u.X.Bytes())
+		fmt.Printf("  u - y     (hex): %x\n", u.Y.Bytes())
+		fmt.Printf("  v - x     (hex): %x\n", v.X.Bytes())
+		fmt.Printf("  v - y     (hex): %x\n\n", v.Y.Bytes())
 
 	}
 

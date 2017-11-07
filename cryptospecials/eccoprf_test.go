@@ -12,17 +12,15 @@ import (
 func TestOPRFComplete(t *testing.T) {
 
 	var (
-		x, y                  *big.Int
-		xMask, yMask, rInv    *big.Int
-		xSalt, ySalt, s, sOut *big.Int
-		xUnmask, yUnmask      *big.Int
-		xUnsalt, yUnsalt      *big.Int
-		xCheck, yCheck        *big.Int
-		verbose               bool
-		dataString            string
-		hData                 []byte
-		rep                   OPRF
-		err                   error
+		dataString         string
+		hData              []byte
+		rInv, s, sOut      *big.Int
+		pt                 ECPoint
+		mask, salt, unmask ECPoint
+		unsalt, check      ECPoint
+		rep                OPRF
+		verbose            bool
+		err                error
 	)
 
 	verbose = true
@@ -34,30 +32,31 @@ func TestOPRFComplete(t *testing.T) {
 	if err != nil {
 		t.Errorf("FAIL - Error: %v", err)
 	}
+
 	s.Mod(s, ec.Params().N)
 
-	xMask, yMask, rInv, err = rep.Mask(dataString, hash256, ec, verbose)
+	mask, rInv, err = rep.Mask(dataString, hash256, ec, verbose)
 	if err != nil {
 		t.Errorf("FAIL - Error: %v", err)
 	}
 
-	xSalt, ySalt, sOut, err = rep.Salt(xMask, yMask, s, ec, verbose)
+	salt, sOut, err = rep.Salt(mask, s, ec, verbose)
 	if err != nil {
 		t.Errorf("FAIL - Error: %v", err)
 	}
 
-	xUnmask, yUnmask, err = rep.Unmask(xSalt, ySalt, rInv, ec, verbose)
+	unmask, err = rep.Unmask(salt, rInv, ec, verbose)
 	if err != nil {
 		t.Errorf("FAIL - Error: %v", err)
 	}
 
-	xUnsalt, yUnsalt, err = rep.unsalt(xUnmask, yUnmask, s, ec, verbose)
+	unsalt, err = rep.unsalt(unmask, s, ec, verbose)
 	if err != nil {
 		t.Errorf("FAIL - Error: %v", err)
 	}
 
 	// Check for OPRF reversability if s & r are known
-	xCheck, yCheck, err = rep.Unmask(xMask, yMask, rInv, ec, verbose)
+	check, err = rep.Unmask(mask, rInv, ec, verbose)
 	if err != nil {
 		t.Errorf("FAIL - Error: %v", err)
 	}
@@ -69,16 +68,16 @@ func TestOPRFComplete(t *testing.T) {
 	}
 	hData = hash256.Sum(nil)
 	hash256.Reset()
-	x, y, err = Hash2curve(hData, hash256, ec.Params(), 1, verbose)
+	pt, err = Hash2curve(hData, hash256, ec.Params(), 1, verbose)
 
 	trialXZero, trialYZero := zero, zero
-	if trialXZero.Sub(xCheck, x) != zero || trialYZero.Sub(yCheck, y) != zero {
-		fmt.Println("x      :", x)
-		fmt.Println("xCheck :", xCheck)
-		fmt.Println("xUnsalt:", xUnsalt)
-		fmt.Println("y      :", y)
-		fmt.Println("yCheck :", yCheck)
-		fmt.Println("yUnsalt:", yUnsalt)
+	if trialXZero.Sub(check.X, pt.X) != zero || trialYZero.Sub(check.Y, pt.Y) != zero {
+		fmt.Println("x      :", pt.X)
+		fmt.Println("xCheck :", check.X)
+		fmt.Println("xUnsalt:", unsalt.X)
+		fmt.Println("y      :", pt.Y)
+		fmt.Println("yCheck :", check.Y)
+		fmt.Println("yUnsalt:", unsalt.Y)
 		fmt.Println("s:", s)
 		fmt.Println("sOut:", sOut)
 		t.Errorf("FAIL - Check points do not match")
@@ -87,5 +86,4 @@ func TestOPRFComplete(t *testing.T) {
 	if true {
 		//t.Errorf("No Error")
 	}
-
 }

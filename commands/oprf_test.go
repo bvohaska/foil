@@ -33,26 +33,31 @@ import (
 
 */
 
-func TestOprf(t *testing.T) {
+// Test I/O on doOPRF
+func TestDoOPRF(t *testing.T) {
+
+}
+
+// Test core functions of the OPRF
+func TestCoreOprf(t *testing.T) {
 
 	var (
-		x, y, xm, ym   *big.Int
-		xs, ys, xu, yu *big.Int
-		rInv, s, sOut  *big.Int
-		zero           *big.Int
-		xBytes, yBytes []byte
-		err            error
-		elem           cryptospecials.OPRF
-		ec             elliptic.Curve
-		h              hash.Hash
+		xBytes, yBytes    []byte
+		rInv, s, sOut     *big.Int
+		zero              *big.Int
+		pt, ptm, pts, ptu cryptospecials.ECPoint
+		elem              cryptospecials.OPRF
+		ec                elliptic.Curve
+		h                 hash.Hash
+		err               error
 	)
 
 	zero = new(big.Int).SetUint64(uint64(0))
 	// Set Verbose to false
 	Verbose = false
 	// Test points; Fill all (x_i,y_i) with zero values
-	xm, ym = new(big.Int), new(big.Int)
-	xs, ys, xu, yu = new(big.Int), new(big.Int), new(big.Int), new(big.Int)
+	ptm.X, ptm.Y = new(big.Int), new(big.Int)
+	pts.X, pts.Y, ptu.X, ptu.Y = new(big.Int), new(big.Int), new(big.Int), new(big.Int)
 	// Parameters that need to be abstracted away if supporting more curves
 	ec = elliptic.P256()
 	h = sha256.New()
@@ -60,21 +65,21 @@ func TestOprf(t *testing.T) {
 
 	//mask = true
 	// ****************************Perform masking operation*******************************
-	xm, ym, rInv, err = elem.Mask(stdInString, h, ec, Verbose)
+	ptm, rInv, err = elem.Mask(stdInString, h, ec, Verbose)
 	if err != nil {
 		t.Errorf("FAIL - %v", err)
 	}
-	if !ec.IsOnCurve(xm, ym) {
-		fmt.Printf("Masked x-coordinate (hex): %x\n", xm)
-		fmt.Printf("Masked y-coordinate (hex): %x\n", ym)
+	if !ec.IsOnCurve(ptm.X, ptm.Y) {
+		fmt.Printf("Masked x-coordinate (hex): %x\n", ptm.X)
+		fmt.Printf("Masked y-coordinate (hex): %x\n", ptm.Y)
 		fmt.Printf("SECRET - r inverse  (hex): %x\n", rInv)
 		fmt.Printf("SECRET - r          (hex): %x\n", rInv.ModInverse(rInv, ec.Params().N))
 		t.Errorf("FAIL - Error: provided points not on elliptic curve")
 	}
 
 	// *********************Test reading and decoding (x,y) from CLI************************
-	xString = hex.EncodeToString(xm.Bytes())
-	yString = hex.EncodeToString(ym.Bytes())
+	xString = hex.EncodeToString(ptm.X.Bytes())
+	yString = hex.EncodeToString(ptm.Y.Bytes())
 	// Decode StdIn(x,y) from [hex] into [bytes]; Check to ensure (x,y) is on the curve
 	xBytes, err = hex.DecodeString(xString)
 	if err != nil {
@@ -84,14 +89,14 @@ func TestOprf(t *testing.T) {
 	if err != nil {
 		t.Errorf("FAIL - %v", err)
 	}
-	x = new(big.Int)
-	y = new(big.Int)
-	x.SetBytes(xBytes)
-	y.SetBytes(yBytes)
-	if !ec.IsOnCurve(x, y) {
+	pt.X = new(big.Int)
+	pt.Y = new(big.Int)
+	pt.X.SetBytes(xBytes)
+	pt.Y.SetBytes(yBytes)
+	if !ec.IsOnCurve(pt.X, pt.Y) {
 		t.Errorf("FAIL - Error: provided points not on elliptic curve")
 	}
-	if x.Sub(x, xm) == zero && y.Sub(y, ym) == zero {
+	if pt.X.Sub(pt.X, ptm.X) == zero && pt.Y.Sub(pt.Y, ptm.Y) == zero {
 		t.Errorf("FAIL - Error: CLI mask (x,y) not matching with calculated mask (xm, ym)")
 	}
 
@@ -99,12 +104,12 @@ func TestOprf(t *testing.T) {
 	// **********************************Perform salting OPRF operations*********************
 	// Test s generation
 	s = nil
-	xs, ys, sOut, err = elem.Salt(xm, ym, s, ec, Verbose)
+	pts, sOut, err = elem.Salt(ptm, s, ec, Verbose)
 	if err != nil {
 		t.Errorf("FAIL - %v", err)
 	}
 	s = new(big.Int)
-	xs, ys, sOut, err = elem.Salt(xm, ym, s, ec, Verbose)
+	pts, sOut, err = elem.Salt(ptm, s, ec, Verbose)
 	if err != nil {
 		fmt.Println("sOut :", sOut)
 		fmt.Println("s    :", s)
@@ -116,18 +121,17 @@ func TestOprf(t *testing.T) {
 	if err != nil {
 		t.Errorf("FAIL - %v", err)
 	}
-	xs, ys, sOut, err = elem.Salt(xm, ym, s, ec, Verbose)
+	pts, sOut, err = elem.Salt(ptm, s, ec, Verbose)
 
 	//unmask = true
 	// ********************************Perform unmasking OPRF operations*********************
 	// This does not check to ensure that rInv < N and warn the user if true
-	xu, yu, err = elem.Unmask(xs, ys, rInv, ec, Verbose)
+	ptu, err = elem.Unmask(pts, rInv, ec, Verbose)
 	if err != nil {
-		fmt.Printf("Unmasked x-coordinate (hex): %x\n", xu)
-		fmt.Printf("Unmasked y-coordinate (hex): %x\n", yu)
+		fmt.Printf("Unmasked x-coordinate (hex): %x\n", ptu.X)
+		fmt.Printf("Unmasked y-coordinate (hex): %x\n", ptu.Y)
 		t.Errorf("FAIL - %v", err)
 	}
-
 	//May want to export OPRF.unsalt to ensure OPRF correctness
 
 }
