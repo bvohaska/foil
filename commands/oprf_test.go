@@ -36,6 +36,9 @@ import (
 // Test I/O on doOPRF
 func TestDoOPRF(t *testing.T) {
 
+	// Test prechecks
+
+	// Go through state space
 }
 
 // Test core functions of the OPRF

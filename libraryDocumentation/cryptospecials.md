@@ -44,31 +44,31 @@ The following fuinctions, structures, or variables are available,
 
 `incCounter` - A support function for `mgf1xor`
 
-### Function Descriptions
+## Function Descriptions
 
 `Hash2curve(data []byte, h hash.Hash, ec *elliptic.CurveParams, curveType int, verbose bool) (pt ECPoint, err error)`
 
 This fuction attempts to hash `data` into the elliptic curve defined by `ec` via the try-and-increment method. While robust, this method is not constant-time nor is there a guarantee that the method will work within a reasonable time.
 
-#### Input
+### Input
 
-data - information to be hashed into the elliptic curve
+  `data` - information to be hashed into the elliptic curve
 
-ec - elliptic curve parameters such as group order, base point, ...
+  `ec` - elliptic curve parameters such as group order, base point, ...
 
-curveType - (1) Weierstrass (2) others. Only (1) is supported currently
+  `curveType` - (1) Weierstrass (2) others. Only (1) is supported currently
 
-verbose - trigger verbose output
+  `verbose` - trigger verbose output
 
-#### Output
+### Output
 
-pt - an elliptic curve point (x,y)
+  `pt` - an elliptic curve point (x,y)
 
-err - a standard formatted err
+  `err` - a standard formatted error
 
-### Examples
+## Examples
 
-RSA-based VRF generation,
+Testing Hash2Curve,
 
 ```go
 
