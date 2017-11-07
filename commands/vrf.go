@@ -347,20 +347,32 @@ func uglyStringParse(eccVrf *cryptospecials.ECCVRF, rawData string) (err error) 
 	if err != nil {
 		return err
 	}
+	if Verbose {
+		fmt.Println(strings.Replace(splitString[0], " ", "", -1))
+	}
 	eccVrf.EccProof.X = new(big.Int).SetBytes(swap)
 	swap, err = hex.DecodeString(strings.Replace(splitString[1], " ", "", -1))
 	if err != nil {
 		return err
+	}
+	if Verbose {
+		fmt.Println(strings.Replace(splitString[1], " ", "", -1))
 	}
 	eccVrf.EccProof.Y = new(big.Int).SetBytes(swap)
 	swap, err = hex.DecodeString(strings.Replace(splitString[2], " ", "", -1))
 	if err != nil {
 		return err
 	}
+	if Verbose {
+		fmt.Println(strings.Replace(splitString[2], " ", "", -1))
+	}
 	eccVrf.EccProof.C = new(big.Int).SetBytes(swap)
 	swap, err = hex.DecodeString(strings.Replace(splitString[3], " ", "", -1))
 	if err != nil {
 		return err
+	}
+	if Verbose {
+		fmt.Println(strings.Replace(splitString[3], " ", "", -1))
 	}
 	eccVrf.EccProof.S = new(big.Int).SetBytes(swap)
 
