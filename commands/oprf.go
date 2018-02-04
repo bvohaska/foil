@@ -89,18 +89,18 @@ func oprfPreCheck(cmd *cobra.Command, args []string) error {
 func doOprf(cmd *cobra.Command, args []string) error {
 
 	var (
-		x, y                 *big.Int
 		rInv, s, sOut        *big.Int
 		xBytes, yBytes, swap []byte
-		err                  error
+		pt                   cryptospecials.ECPoint
 		elem                 cryptospecials.OPRF
 		ec                   elliptic.Curve
 		h                    hash.Hash
+		err                  error
 	)
 
 	// Fill (x,y) with zero values
-	x = new(big.Int)
-	y = new(big.Int)
+	pt.X = new(big.Int)
+	pt.Y = new(big.Int)
 	// Sill salts with zero values
 	sOut = new(big.Int)
 	rInv = new(big.Int)
@@ -118,22 +118,22 @@ func doOprf(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return err
 		}
-		x.SetBytes(xBytes)
-		y.SetBytes(yBytes)
-		if !ec.IsOnCurve(x, y) {
+		pt.X.SetBytes(xBytes)
+		pt.Y.SetBytes(yBytes)
+		if !ec.IsOnCurve(pt.X, pt.Y) {
 			return errors.New("Error: provided points not on elliptic curve")
 		}
 	}
 
 	// Perform OPRF Masking
 	if mask {
-		x, y, rInv, err = elem.Mask(stdInString, h, ec, Verbose)
+		pt, rInv, err = elem.Mask(stdInString, h, ec, Verbose)
 		if err != nil {
 			return err
 		}
 
-		fmt.Printf("Masked x-coordinate (hex): %x\n", x)
-		fmt.Printf("Masked y-coordinate (hex): %x\n", y)
+		fmt.Printf("Masked x-coordinate (hex): %x\n", pt.X)
+		fmt.Printf("Masked y-coordinate (hex): %x\n", pt.Y)
 		fmt.Printf("SECRET - r inverse  (hex): %x\n", rInv)
 	}
 	// Perform OPRF Salting
@@ -149,7 +149,7 @@ func doOprf(cmd *cobra.Command, args []string) error {
 			s = new(big.Int).SetBytes(swap)
 		}
 
-		x, y, sOut, err = elem.Salt(x, y, s, ec, Verbose)
+		pt, sOut, err = elem.Salt(pt, s, ec, Verbose)
 		if err != nil {
 			return fmt.Errorf("OPRF Salting failed: %v", err)
 		}
@@ -159,8 +159,8 @@ func doOprf(cmd *cobra.Command, args []string) error {
 			fmt.Printf("SECRET - s given (hex)        : %x\n", s)
 		}
 
-		fmt.Printf("Salted x-coordinate (hex): %x\n", x)
-		fmt.Printf("Salted y-coordinate (hex): %x\n", y)
+		fmt.Printf("Salted x-coordinate (hex): %x\n", pt.X)
+		fmt.Printf("Salted y-coordinate (hex): %x\n", pt.Y)
 	}
 	// Perform OPRF unmasking
 	if unmask {
@@ -171,13 +171,13 @@ func doOprf(cmd *cobra.Command, args []string) error {
 		}
 		rInv = new(big.Int).SetBytes(swap)
 
-		x, y, err = elem.Unmask(x, y, rInv, ec, Verbose)
+		pt, err = elem.Unmask(pt, rInv, ec, Verbose)
 		if err != nil {
 			return err
 		}
 
-		fmt.Printf("Unmasked x-coordinate (hex): %x\n", x)
-		fmt.Printf("Unmasked y-coordinate (hex): %x\n", y)
+		fmt.Printf("Unmasked x-coordinate (hex): %x\n", pt.X)
+		fmt.Printf("Unmasked y-coordinate (hex): %x\n", pt.Y)
 	}
 
 	return nil

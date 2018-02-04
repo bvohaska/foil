@@ -30,7 +30,7 @@ import (
 *  key sizes use the ecc else it is likely that performance will be an issue. It is
 *  also much easier to utilize constant-time algorithms with ecc than useing rsa algos.
  */
-func RSAKeyGen(keySize int) (*rsa.PrivateKey, error) {
+func RSAKeyGen(keySize int) (privKey *rsa.PrivateKey, err error) {
 
 	if keySize < 2048 {
 		return nil, errors.New("Error: RSA key size less than 2048 bits")
@@ -39,9 +39,9 @@ func RSAKeyGen(keySize int) (*rsa.PrivateKey, error) {
 	}
 
 	rng := rand.Reader
-	privateKey, err := rsa.GenerateKey(rng, keySize)
+	privKey, err = rsa.GenerateKey(rng, keySize)
 
-	return privateKey, err
+	return privKey, err
 }
 
 // RSAKeySave is an exportable function
@@ -49,12 +49,11 @@ func RSAKeyGen(keySize int) (*rsa.PrivateKey, error) {
 *  RSAKeySave saves a public or private RSA key from a private RSA key. Files
 *  are saved as PEM.
  */
-func RSAKeySave(privKey *rsa.PrivateKey, savePubKey bool, printStdIn bool, dest *string, verbose bool) error {
+func RSAKeySave(privKey *rsa.PrivateKey, savePubKey bool, printStdIn bool, dest *string, verbose bool) (err error) {
 
 	var (
 		derBytes []byte
 		pemBytes []byte
-		err      error
 	)
 
 	/*
@@ -110,12 +109,10 @@ func RSAKeySave(privKey *rsa.PrivateKey, savePubKey bool, printStdIn bool, dest 
 }
 
 // RSAPrivKeyLoad is an exportable function
-func RSAPrivKeyLoad(source *string, verbose bool) (*rsa.PrivateKey, error) {
+func RSAPrivKeyLoad(source *string, verbose bool) (privKey *rsa.PrivateKey, err error) {
 
 	var (
-		rawPem  []byte
-		err     error
-		privKey *rsa.PrivateKey
+		rawPem []byte
 	)
 
 	// Read raw PEM file

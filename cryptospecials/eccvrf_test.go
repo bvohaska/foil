@@ -19,7 +19,7 @@ func TestEccVrf(t *testing.T) {
 		alpha   []byte
 
 		privKey *ecdsa.PrivateKey
-		pubK    ECCPoint
+		pubK    ECPoint
 		eccVrf  ECCVRF
 		err     error
 	)
